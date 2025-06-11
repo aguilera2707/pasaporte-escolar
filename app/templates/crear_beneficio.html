@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crear Beneficio</title>
+    <meta charset="utf-8">
+</head>
+<style>
+.flash.success {
+    background-color: #c8f7c5;
+    color: #2c662d;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+.flash.error {
+    background-color: #f7c5c5;
+    color: #662c2c;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+</style>
+<body>
+    <h1>Crear nuevo beneficio</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('crear_beneficio') }}">
+        <label for="nombre">Nombre del beneficio:</label><br>
+        <input type="text" id="nombre" name="nombre" required><br><br>
+
+        <label for="puntos_requeridos">Puntos necesarios:</label><br>
+        <input type="number" id="puntos_requeridos" name="puntos_requeridos" required><br><br>
+
+        <button type="submit">Crear beneficio</button>
+    </form>
+
+    <p><a href="{{ url_for('panel_admin') }}">← Volver al panel de administración</a></p>
+</body>
+</html>

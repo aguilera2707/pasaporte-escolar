@@ -690,16 +690,23 @@ def crear_beneficio():
 
     if request.method == 'POST':
         nombre = request.form.get('nombre')
-        puntos = request.form.get('puntos')
+        puntos_requeridos = request.form.get('puntos_requeridos')
 
-        if not nombre or not puntos:
+        if not nombre or not puntos_requeridos:
             flash("Todos los campos son obligatorios", "error")
-            return redirect(url_for('crear_beneficio'))
+            return render_template('crear_beneficio.html')
 
-        beneficio = Beneficio(nombre=nombre, puntos_requeridos=int(puntos))
+        try:
+            puntos_requeridos = int(puntos_requeridos)
+        except ValueError:
+            flash("Los puntos deben ser un número", "error")
+            return render_template('crear_beneficio.html')
+
+        beneficio = Beneficio(nombre=nombre, puntos_requeridos=puntos_requeridos)
         db.session.add(beneficio)
         db.session.commit()
-        flash("Beneficio creado correctamente", "success")
+
+        flash("Beneficio creado exitosamente", "success")
         return redirect(url_for('panel_admin'))
 
     return render_template('crear_beneficio.html')
