@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Administradores</title>
+</head>
+<body>
+    <h1>Lista de Administradores</h1>
+
+    <p>
+        <a href="{{ url_for('crear_admin') }}">
+            <button>Crear nuevo administrador</button>
+        </a>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul>
+        {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in administradores %}
+            <tr>
+                <td>{{ admin.id }}</td>
+                <td>{{ admin.usuario }}</td>
+                <td>
+                    <form action="{{ url_for('eliminar_administrador', admin_id=admin.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Seguro que deseas eliminar este administrador?');">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><a href="{{ url_for('panel_admin') }}">← Volver al panel</a></p>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil de {{ familia.nombre }}</title>
+</head>
+<body>
+    <h1>¡Hola, {{ familia.nombre }}!</h1>
+
+    <h2>Puntos actuales: {{ familia.puntos }}</h2>
+
+    <h2>Tu código QR</h2>
+    <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia" width="200">
+    <br>
+    <a href="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" download>Descargar QR</a>
+
+
+    <h2>Beneficios para canjear</h2>
+<table border="1">
+    <tr>
+        <th>Beneficio</th>
+        <th>Puntos requeridos</th>
+    </tr>
+    {% for beneficio in beneficios %}
+    <tr>
+        <td>{{ beneficio.nombre }}</td>
+        <td>{{ beneficio.puntos_requeridos }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+    <h2>Historial de transacciones</h2>
+    {% if transacciones %}
+        <ul>
+        {% for t in transacciones %}
+            <li>
+                {{ t.fecha.strftime('%Y-%m-%d %H:%M') }} - 
+                {{ 'Ganaste' if t.tipo == 'suma' else 'Canjeaste' }} {{ t.puntos }} puntos -
+                {{ t.descripcion or 'Sin descripción' }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay transacciones registradas.</p>
+    {% endif %}
+</body>
+</html>

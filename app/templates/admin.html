@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Administración</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        #mensaje {
+            display: none;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <p><a href="/logout">Cerrar sesión</a></p>
+    <h1>Panel de Administración</h1>
+
+    <a href="{{ url_for('crear_beneficio') }}"><button>Crear beneficio</button></a>
+
+    <p>
+    <a href="{{ url_for('lista_administradores') }}">
+        <button>Ver Administradores</button>
+    </a>
+    </p>
+
+    <p><a href="{{ url_for('crear_admin') }}">➕ Crear nuevo administrador</a></p>
+    <p><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Agregar familia</a></p>
+    <p><a href="{{ url_for('crear_qr_evento') }}">📷 Crear QR para Evento</a></p>
+
+    <div id="mensaje"></div>
+
+    <input type="text" id="busqueda" placeholder="Buscar familia..." oninput="filtrarFamilias()">
+
+    <table id="tabla-familias">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Contraseña</th>
+                <th>Puntos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h2>Eventos con QR</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre del Evento</th>
+            <th>Puntos</th>
+            <th>QR</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for evento in eventos %}
+        <tr>
+            <td>{{ evento.nombre_evento }}</td>
+            <td>{{ evento.puntos }}</td>
+            <td>
+                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="100">
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+    <script>
+        function mostrarMensaje(texto, tipo = 'exito') {
+            const mensajeDiv = document.getElementById('mensaje');
+            mensajeDiv.textContent = texto;
+            mensajeDiv.style.display = 'block';
+            mensajeDiv.style.backgroundColor = tipo === 'error' ? '#f8d7da' : '#d4edda';
+            mensajeDiv.style.color = tipo === 'error' ? '#721c24' : '#155724';
+            mensajeDiv.style.border = tipo === 'error' ? '1px solid #f5c6cb' : '1px solid #c3e6cb';
+
+            setTimeout(() => {
+                mensajeDiv.style.display = 'none';
+            }, 4000);
+        }
+
+        let familias = [];
+
+        async function cargarFamilias() {
+            const res = await fetch('/familias');
+            familias = await res.json();
+            mostrarFamilias(familias);
+        }
+
+        function mostrarFamilias(lista) {
+            const tbody = document.querySelector('#tabla-familias tbody');
+            tbody.innerHTML = '';
+            lista.forEach(f => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${f.id}</td>
+                        <td>${f.nombre}</td>
+                        <td>${f.correo}</td>
+                        <td>${f.password}</td>
+                        <td>${f.puntos}</td>
+                        <td>
+                            <a href="/familia/${f.id}/ver">Ver</a> |
+                            <button onclick="sumar(${f.id})">➕</button>
+                            <button onclick="canjear(${f.id})">➖</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filtrarFamilias() {
+            const texto = document.getElementById('busqueda').value.toLowerCase();
+            const filtradas = familias.filter(f =>
+                f.nombre.toLowerCase().includes(texto) ||
+                f.correo.toLowerCase().includes(texto)
+            );
+            mostrarFamilias(filtradas);
+        }
+
+        function sumar(id) {
+            const puntos = prompt("¿Cuántos puntos deseas sumar?");
+            if (!puntos || isNaN(puntos)) return;
+
+            const motivo = prompt("Motivo de la acreditación:");
+            if (!motivo) return;
+
+            fetch('/transaccion', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    familia_id: id,
+                    puntos: parseInt(puntos),
+                    tipo: "suma",
+                    descripcion: motivo
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    mostrarMensaje(data.error, 'error');
+                } else {
+                    mostrarMensaje(data.mensaje, 'exito');
+                    cargarFamilias();
+                }
+            });
+        }
+
+        function canjear(id) {
+            const puntos = prompt("¿Cuántos puntos deseas canjear?");
+            if (!puntos || isNaN(puntos)) return;
+
+            const motivo = prompt("Motivo del canje:");
+            if (!motivo) return;
+
+            fetch('/transaccion', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    familia_id: id,
+                    puntos: parseInt(puntos),
+                    tipo: "canje",
+                    descripcion: motivo
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    mostrarMensaje(data.error, 'error');
+                } else {
+                    mostrarMensaje(data.mensaje, 'exito');
+                    cargarFamilias();
+                }
+            });
+        }
+
+        cargarFamilias();
+    </script>
+</body>
+</html>

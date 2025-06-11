@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Escanear QR</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <h1>Escanear Código QR</h1>
+    <div id="reader" style="width: 300px;"></div>
+    <p id="resultado"></p>
+
+    <script>
+        function procesarQR(qrText) {
+            document.getElementById('resultado').textContent = "QR Detectado: " + qrText;
+
+            // Verificar si contiene los parámetros
+            if (qrText.startsWith("cuponera://transaccion")) {
+                const url = new URL(qrText.replace("cuponera://", "http://localhost/"));
+                const familia_id = url.searchParams.get("familia_id");
+                const tipo = url.searchParams.get("tipo");
+                const puntos = parseInt(url.searchParams.get("puntos"));
+                const descripcion = "Escaneo QR automático";
+
+                fetch("/transaccion", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ familia_id, tipo, puntos, descripcion })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("resultado").textContent = data.mensaje || JSON.stringify(data);
+                });
+            } else {
+                document.getElementById("resultado").textContent = "QR inválido";
+            }
+        }
+
+        const scanner = new Html5Qrcode("reader");
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 250 },
+                    qrCodeMessage => {
+                        scanner.stop();  // detener escaneo después de detectar
+                        procesarQR(qrCodeMessage);
+                    },
+                    errorMessage => {
+                        // mensaje de error silencioso
+                    }
+                );
+            }
+        });
+    </script>
+</body>
+</html>

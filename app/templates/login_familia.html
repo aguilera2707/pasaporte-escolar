@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Familia</title>
+</head>
+<body>
+    <h1>Iniciar sesión - Familia</h1>
+
+    <form method="POST">
+        <input type="email" name="correo" placeholder="Correo" required><br>
+        <input type="password" name="password" placeholder="Contraseña" required><br>
+        <button type="submit">Ingresar</button>
+    </form>
+
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+        {% if messages %}
+            <p style="color: red;">{{ messages[0] }}</p>
+        {% endif %}
+    {% endwith %}
+</body>
+</html>

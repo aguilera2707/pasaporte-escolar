@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cuponera Escolar</title>
+    <style>
+.flash {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+.flash.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+.flash.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+</style>
+</head>
+<body>
+    <h1>Lista de Familias</h1>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+    <ul id="mensajes-flash">
+    {% for category, message in messages %}
+        <li class="flash {{ category }}">{{ message }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% endwith %}
+
+
+<h2>Registrar nueva familia</h2>
+<form method="POST" action="{{ url_for('lista_familias') }}">
+    <input type="text" name="nombre" placeholder="Nombre" required>
+    <input type="email" name="correo" placeholder="Correo" required>
+    <input type="password" name="password" placeholder="Contraseña" required>
+    <button type="submit">Registrar</button>
+</form>
+
+    <h2>Familias registradas</h2>
+    <ul>
+        {% for familia in familias %}
+            <li>
+                <a href="{{ url_for('ver_familia', familia_id=familia.id) }}">
+                    {{ familia.nombre }} ({{ familia.puntos }} puntos)
+                </a>
+            </li>
+        {% else %}
+            <li>No hay familias registradas.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Buscar familia</h2>
+<form method="GET" action="{{ url_for('lista_familias') }}">
+    <input type="text" name="buscar" placeholder="Buscar por nombre" value="{{ buscar or '' }}">
+    <button type="submit">Buscar</button>
+</form>
+
+<script>
+  // Oculta los mensajes flash después de 4 segundos
+setTimeout(function() {
+    const mensajes = document.getElementById('mensajes-flash');
+    if (mensajes) {
+    mensajes.style.display = 'none';
+    }
+}, 4000);
+</script>
+</body>
+</html>
