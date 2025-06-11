@@ -5,7 +5,9 @@
     <title>Perfil de Familia</title>
 </head>
 <body>
-
+    <form action="{{ url_for('generar_qr_staff', familia_id=familia.id) }}" method="POST">
+    <button type="submit">Actualizar QR para uso del staff</button>
+    </form>
     <h1>Familia: {{ familia.nombre }}</h1>
     <p>Puntos actuales: {{ familia.puntos }}</p>
 
@@ -64,24 +66,52 @@
     <p><em>No hay transacciones que coincidan con los filtros seleccionados.</em></p>
 {% endif %}
     <h2>Registrar transacción</h2>
-<form action="/familia/{{ familia.id }}/transaccion" method="POST">
-    <label for="tipo">Tipo:</label>
-    <select name="tipo" id="tipo">
-        <option value="suma">Sumar puntos</option>
-        <option value="canje">Canjear puntos</option>
-    </select><br>
-
-    <label for="puntos">Puntos:</label>
-    <input type="number" name="puntos" required><br>
-
-    <label for="descripcion">Descripción:</label>
-    <input type="text" name="descripcion"><br>
-
+<form id="transaccionForm">
+    <select name="tipo" required>
+        <option value="suma">Suma</option>
+        <option value="canje">Canje</option>
+    </select>
+    <input type="number" name="puntos" required min="1" placeholder="Cantidad de puntos">
+    <input type="text" name="descripcion" placeholder="Descripción">
     <button type="submit">Registrar</button>
 </form>
+
+<div id="mensaje-transaccion" style="margin-top:10px; font-weight:bold;"></div>
+
 <p><a href="{{ url_for('lista_familias') }}">← Volver al listado de familias</a></p>
 
 <h3>Código QR:</h3>
 <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="QR de la familia">
+
+<script>
+document.getElementById("transaccionForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = {
+        tipo: formData.get("tipo"),
+        puntos: formData.get("puntos"),
+        descripcion: formData.get("descripcion")
+    };
+
+    fetch(`/familia/{{ familia.id }}/transaccion`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(resp => resp.json())
+    .then(resp => {
+        const div = document.getElementById("mensaje-transaccion");
+        div.innerText = resp.mensaje || resp.error;
+        div.style.color = resp.mensaje ? "green" : "red";
+        setTimeout(() => { div.innerText = ""; }, 4000);
+        if (resp.mensaje) location.reload();  // recarga si fue exitoso
+    })
+    .catch(err => {
+        console.error("Error:", err);
+    });
+});
+</script>
 </body>
 </html>

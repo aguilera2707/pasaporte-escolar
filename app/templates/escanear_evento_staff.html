@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Escanear QR por Evento</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; }
+        h1 { color: #333; }
+        select, input, button {
+            padding: 0.5rem;
+            margin-top: 1rem;
+            display: block;
+            width: 100%;
+            max-width: 400px;
+        }
+        #resultado { margin-top: 1rem; color: green; font-weight: bold; }
+        #error { margin-top: 1rem; color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Escanear código QR de familia</h1>
+
+    <label for="evento_id">Selecciona el evento:</label>
+    <select id="evento_id">
+        {% for evento in eventos %}
+            <option value="{{ evento.id }}">{{ evento.nombre_evento }} - {{ evento.puntos }} puntos</option>
+        {% endfor %}
+    </select>
+
+    <label for="familia_id">ID de la familia (desde QR):</label>
+    <input type="number" id="familia_id" placeholder="Ej. 5">
+
+    <button onclick="enviarEscaneo()">Registrar asistencia</button>
+
+    <div id="resultado"></div>
+    <div id="error"></div>
+
+    <script>
+        function enviarEscaneo() {
+            const eventoId = document.getElementById("evento_id").value;
+            const familiaId = document.getElementById("familia_id").value;
+            const resultado = document.getElementById("resultado");
+            const error = document.getElementById("error");
+
+            resultado.textContent = "";
+            error.textContent = "";
+
+            axios.post("/api/escanear_qr_evento", {
+                evento_id: eventoId,
+                familia_id: familiaId
+            })
+            .then(res => {
+                resultado.textContent = res.data.mensaje;
+            })
+            .catch(err => {
+                if (err.response && err.response.data.error) {
+                    error.textContent = err.response.data.error;
+                } else {
+                    error.textContent = "Error al conectar con el servidor";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

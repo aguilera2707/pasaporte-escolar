@@ -19,6 +19,20 @@
     <p><a href="/logout">Cerrar sesión</a></p>
     <h1>Panel de Administración</h1>
 
+    <h2>Eventos</h2>
+<ul>
+    {% for evento in eventos %}
+        <li>
+            {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
+            <a href="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
+                <button>Escanear QR de Familias</button>
+            </a>
+        </li>
+    {% else %}
+        <li>No hay eventos registrados.</li>
+    {% endfor %}
+</ul>
+
     <a href="{{ url_for('crear_beneficio') }}"><button>Crear beneficio</button></a>
 
     <p>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Escaneo de QR - {{ evento.nombre_evento }}</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <h1>Escanear QR de Familias para el evento: {{ evento.nombre_evento }}</h1>
+    <p>ID del evento: {{ evento.id }}</p>
+    <div id="qr-reader" style="width: 300px;"></div>
+    <div id="resultado" style="margin-top: 20px; font-weight: bold;"></div>
+
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            // Desactiva el escáner tras primer éxito
+            html5QrcodeScanner.clear();
+
+            // Mostrar texto escaneado y enviar al backend
+            document.getElementById("resultado").innerText = "Procesando...";
+
+            fetch("/admin/registrar_asistencia_evento", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                qr_url: decodedText,
+                evento_id: {{ evento.id | tojson }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("resultado").innerText = data.mensaje || data.error;
+                setTimeout(() => {
+                    window.location.reload();  // Reiniciar escáner
+                }, 3000);
+            })
+            .catch(error => {
+                document.getElementById("resultado").innerText = "Error al procesar: " + error;
+            });
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "qr-reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>

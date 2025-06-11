@@ -364,32 +364,40 @@ def ver_familia(familia_id):
 
 @app.route('/familia/<int:familia_id>/transaccion', methods=['POST'])
 def registrar_transaccion_web(familia_id):
+    data = request.get_json()
+    tipo = data.get("tipo")
+    try:
+        puntos = int(data.get("puntos"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Puntos inválidos"}), 400
+
+    descripcion = data.get("descripcion")
+
     familia = Familia.query.get(familia_id)
     if not familia:
-        return "Familia no encontrada", 404
-
-    tipo = request.form.get('tipo')
-    puntos = int(request.form.get('puntos'))
-    descripcion = request.form.get('descripcion')
+        return jsonify({"error": "Familia no encontrada"}), 404
 
     if tipo not in ['suma', 'canje']:
-        return "Tipo de transacción no válido", 400
+        return jsonify({"error": "Tipo de transacción no válido"}), 400
 
-    if tipo == 'canje':
-        puntos = -abs(puntos)  # Asegura que sea negativo
+    if tipo == 'canje' and puntos > familia.puntos:
+        return jsonify({"error": "No tienes suficientes puntos"}), 400
+
+    puntos_finales = puntos if tipo == 'suma' else -abs(puntos)
 
     transaccion = Transaccion(
         familia_id=familia_id,
         tipo=tipo,
-        puntos=puntos,
+        puntos=puntos_finales,
         descripcion=descripcion
     )
 
-    familia.puntos += puntos
+    familia.puntos += puntos_finales
     db.session.add(transaccion)
     db.session.commit()
 
-    return redirect(url_for('ver_familia', familia_id=familia_id))
+    return jsonify({"mensaje": "Transacción registrada correctamente"}), 200
+
 
 
 @app.route('/familia/<int:familia_id>/exportar')
@@ -710,3 +718,216 @@ def crear_beneficio():
         return redirect(url_for('panel_admin'))
 
     return render_template('crear_beneficio.html')
+
+@app.route('/escanear_qr_evento/<int:evento_id>/<int:familia_id>')
+def escanear_qr_familia_en_evento(evento_id, familia_id):
+    evento = EventoQR.query.get(evento_id)
+    if not evento:
+        return "Evento no encontrado", 404
+
+    familia = Familia.query.get(familia_id)
+    if not familia:
+        return "Familia no encontrada", 404
+
+    ya_escaneo = EventoQRRegistro.query.filter_by(familia_id=familia_id, evento_id=evento_id).first()
+    if ya_escaneo:
+        return "Esta familia ya fue registrada en este evento", 400
+
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
+    db.session.commit()
+
+    return f"Puntos del evento '{evento.nombre_evento}' sumados correctamente a la familia '{familia.nombre}'."
+
+
+@app.route('/staff/escanear/<int:familia_id>', methods=['GET', 'POST'])
+def escanear_familia_staff(familia_id):
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    familia = Familia.query.get(familia_id)
+    if not familia:
+        return "Familia no encontrada", 404
+
+    eventos = EventoQR.query.all()
+
+    if request.method == 'POST':
+        evento_id = int(request.form['evento_id'])
+
+        ya_asistio = EventoQRRegistro.query.filter_by(familia_id=familia_id, evento_id=evento_id).first()
+        if ya_asistio:
+            flash("Esta familia ya recibió puntos por este evento", "error")
+        else:
+            evento = EventoQR.query.get(evento_id)
+            familia.puntos += evento.puntos
+            registro = EventoQRRegistro(familia_id=familia_id, evento_id=evento_id)
+            db.session.add(registro)
+            db.session.commit()
+            flash(f"{evento.puntos} puntos sumados por el evento '{evento.nombre_evento}'", "success")
+
+        return redirect(url_for('escanear_familia_staff', familia_id=familia_id))
+
+    return render_template('escanear_staff.html', familia=familia, eventos=eventos)
+
+@app.route('/familia/<int:familia_id>/generar_qr_staff', methods=['POST'])
+def generar_qr_staff(familia_id):
+    familia = Familia.query.get(familia_id)
+    if not familia:
+        return "Familia no encontrada", 404
+
+    # Crear carpeta si no existe
+    qr_folder = os.path.join('app', 'static', 'qr')
+    os.makedirs(qr_folder, exist_ok=True)
+
+    # Crear ruta de archivo
+    qr_path = os.path.join(qr_folder, f'familia_{familia.id}.png')
+
+    # ✅ Nueva URL para escaneo de staff
+    qr_data = url_for('escanear_familia_staff', familia_id=familia.id, _external=True)
+    qr = qrcode.make(qr_data)
+    qr.save(qr_path)
+
+    flash("Código QR actualizado para uso del staff", "success")
+    return redirect(url_for('ver_familia', familia_id=familia.id))
+
+@app.route('/admin/escanear_evento', methods=['GET'])
+def escanear_evento_staff():
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()
+    return render_template('escanear_evento_staff.html', eventos=eventos)
+
+@app.route('/api/escanear_qr_evento', methods=['POST'])
+def escanear_qr_evento_api():
+    data = request.get_json()
+    evento_id = data.get('evento_id')
+    familia_id = data.get('familia_id')
+
+    if not evento_id or not familia_id:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    evento = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+
+    if not evento:
+        return jsonify({"error": "Evento no encontrado"}), 404
+    if not familia:
+        return jsonify({"error": "Familia no encontrada"}), 404
+
+    # Verificar si ya escaneó este evento
+    ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento_id, familia_id=familia_id).first()
+    if ya_registrado:
+        return jsonify({"error": "Esta familia ya fue registrada en este evento"}), 409
+
+    # Registrar puntos y guardar asistencia
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
+    db.session.add(Transaccion(
+        familia_id=familia_id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
+    db.session.commit()
+
+    return jsonify({
+        "mensaje": f"Puntos agregados correctamente por asistir al evento '{evento.nombre_evento}'",
+        "puntos_actuales": familia.puntos
+    }), 200
+
+@app.route('/api/escanear_qr_evento', methods=['POST'])
+def api_escanear_qr_evento():
+    if 'admin' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    familia_id = data.get('familia_id')
+    evento_id = data.get('evento_id')
+
+    if not familia_id or not evento_id:
+        return jsonify({'error': 'Datos incompletos'}), 400
+
+    familia = Familia.query.get(familia_id)
+    evento = EventoQR.query.get(evento_id)
+
+    if not familia or not evento:
+        return jsonify({'error': 'Familia o evento no encontrados'}), 404
+
+    ya_escaneo = EventoQRRegistro.query.filter_by(familia_id=familia_id, evento_id=evento_id).first()
+    if ya_escaneo:
+        return jsonify({'error': 'La familia ya escaneó este evento'}), 409
+
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
+    db.session.add(Transaccion(
+        familia_id=familia_id,
+        tipo="suma",
+        puntos=evento.puntos,
+        descripcion=f"Evento: {evento.nombre_evento}"
+    ))
+    db.session.commit()
+
+    return jsonify({'mensaje': f"{evento.puntos} puntos asignados a {familia.nombre} por {evento.nombre_evento}"}), 200
+
+@app.route("/admin/escaneo_evento/<int:evento_id>")
+def vista_escaneo_evento(evento_id):
+    evento = EventoQR.query.get_or_404(evento_id)
+    return render_template('escaneo_evento.html', evento=evento)
+
+
+@app.route('/admin/registrar_asistencia_evento', methods=["POST"])
+def registrar_asistencia_evento():
+    data = request.get_json()
+    qr_url = data.get("qr_url")
+    evento_id = data.get("evento_id")
+
+    print("🔹 Data recibida:", data)
+
+    if not qr_url or not evento_id:
+        return jsonify({"error": "Datos incompletos"}), 400
+
+    # Extraer ID de familia desde la URL escaneada
+    from urllib.parse import urlparse
+    import re
+
+    parsed_url = urlparse(qr_url)
+    match = re.search(r'/familia/(\d+)', parsed_url.path)
+
+    if not match:
+        return jsonify({"error": "No se pudo extraer el ID de familia del QR"}), 400
+
+    try:
+        familia_id = int(match.group(1))
+    except Exception:
+        return jsonify({"error": "ID inválido en la URL"}), 400
+
+    evento = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+
+    if not evento or not familia:
+        return jsonify({"error": "Evento o familia no encontrada"}), 404
+
+    ya_escaneo = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
+    if ya_escaneo:
+        return jsonify({"error": f"{familia.nombre} ya registró asistencia a {evento.nombre_evento}"}), 400
+
+    # ✅ Sumar puntos
+    familia.puntos += evento.puntos
+
+    # ✅ Guardar registro de asistencia
+    db.session.add(EventoQRRegistro(evento_id=evento.id, familia_id=familia.id))
+
+    # ✅ Guardar en historial
+    transaccion = Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    )
+    db.session.add(transaccion)
+
+    db.session.commit()
+
+    return jsonify({"mensaje": f"Asistencia registrada correctamente. Se sumaron {evento.puntos} puntos a {familia.nombre}"}), 200
+
