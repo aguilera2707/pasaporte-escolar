@@ -13,6 +13,17 @@
             border-radius: 5px;
             font-weight: bold;
         }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 <body>
@@ -20,25 +31,25 @@
     <h1>Panel de Administración</h1>
 
     <h2>Eventos</h2>
-<ul>
-    {% for evento in eventos %}
-        <li>
-            {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
-            <a href="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
-                <button>Escanear QR de Familias</button>
-            </a>
-        </li>
-    {% else %}
-        <li>No hay eventos registrados.</li>
-    {% endfor %}
-</ul>
+    <ul>
+        {% for evento in eventos %}
+            <li>
+                {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
+                <a href="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
+                    <button>Escanear QR de Familias</button>
+                </a>
+            </li>
+        {% else %}
+            <li>No hay eventos registrados.</li>
+        {% endfor %}
+    </ul>
 
     <a href="{{ url_for('crear_beneficio') }}"><button>Crear beneficio</button></a>
 
     <p>
-    <a href="{{ url_for('lista_administradores') }}">
-        <button>Ver Administradores</button>
-    </a>
+        <a href="{{ url_for('lista_administradores') }}">
+            <button>Ver Administradores</button>
+        </a>
     </p>
 
     <p><a href="{{ url_for('crear_admin') }}">➕ Crear nuevo administrador</a></p>
@@ -64,26 +75,34 @@
     </table>
 
     <h2>Eventos con QR</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Nombre del Evento</th>
-            <th>Puntos</th>
-            <th>QR</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for evento in eventos %}
-        <tr>
-            <td>{{ evento.nombre_evento }}</td>
-            <td>{{ evento.puntos }}</td>
-            <td>
-                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="100">
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre del Evento</th>
+                <th>Puntos</th>
+                <th>QR</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for evento in eventos %}
+            <tr>
+                <td>{{ evento.nombre_evento }}</td>
+                <td>{{ evento.puntos }}</td>
+                <td>
+                    <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="100">
+                </td>
+                <td>
+                    <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
+                            🗑 Eliminar
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     <script>
         function mostrarMensaje(texto, tipo = 'exito') {

@@ -635,42 +635,8 @@ def generar_qr_prueba(familia_id):
 
     return send_file(qr_path, mimetype='image/png')
 
-@app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
-def crear_qr_evento():
-    if 'admin' not in session:
-        return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        nombre = request.form['nombre_evento']
-        puntos = int(request.form['puntos'])
-
-        evento = EventoQR(nombre_evento=nombre, puntos=puntos, qr_filename="temporal.png")
-        db.session.add(evento)
-        db.session.commit()
-
-# Luego generar el QR con el ID del evento (que ya tienes porque hiciste commit)
-        qr_filename = f"qr_evento_{evento.id}.png"
-        evento.qr_filename = qr_filename
-        db.session.commit()
-        # Crear QR con URL para escaneo
-        url_qr = url_for('escanear_evento_qr', evento_id=evento.id, _external=True)
-        qr = qrcode.make(url_qr)
-
-        ruta_qr = os.path.join('app', 'static', 'qr_eventos')
-        os.makedirs(ruta_qr, exist_ok=True)
-        filename = f'evento_{evento.id}.png'
-        path_completo = os.path.join(ruta_qr, filename)
-        qr.save(path_completo)
-
-        evento.qr_filename = filename
-        db.session.commit()
-
-        flash('Código QR de evento creado', 'exito')
-        return redirect(url_for('panel_admin'))
-
-    return render_template('crear_qr_evento.html')
-
-@app.route('/escanear_evento/<int:evento_id>')
+@app.route('/escanear_evento_directo/<int:evento_id>')
 def escanear_evento_qr(evento_id):
     familia_id = session.get('familia_id')
     if not familia_id:
@@ -682,14 +648,23 @@ def escanear_evento_qr(evento_id):
 
     ya_escaneo = EventoQRRegistro.query.filter_by(familia_id=familia_id, evento_id=evento_id).first()
     if ya_escaneo:
-        return "Ya escaneaste este evento", 400
+        return render_template("asistencia_exitosa.html", evento=evento, familia=Familia.query.get(familia_id), ya_asistio=True)
 
     familia = Familia.query.get(familia_id)
     familia.puntos += evento.puntos
+
     db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
+    db.session.add(Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
     db.session.commit()
 
-    return f"¡Has ganado {evento.puntos} puntos por el evento {evento.nombre_evento}!"
+    return render_template("asistencia_exitosa.html", evento=evento, familia=familia, ya_asistio=False)
+
+
 
 @app.route('/admin/crear_beneficio', methods=['GET', 'POST'])
 def crear_beneficio():
@@ -930,4 +905,141 @@ def registrar_asistencia_evento():
     db.session.commit()
 
     return jsonify({"mensaje": f"Asistencia registrada correctamente. Se sumaron {evento.puntos} puntos a {familia.nombre}"}), 200
+
+@app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
+def crear_qr_evento():
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        nombre = request.form['nombre_evento']
+        puntos = int(request.form['puntos'])
+
+        # ✅ NUEVO: Leer latitud y longitud del formulario
+        latitud = float(request.form['latitud'])
+        longitud = float(request.form['longitud'])
+
+        # Crear evento con latitud y longitud
+        evento = EventoQR(
+            nombre_evento=nombre,
+            puntos=puntos,
+            latitud=latitud,
+            longitud=longitud,
+            qr_filename="temporal.png"
+        )
+        db.session.add(evento)
+        db.session.commit()
+
+        # Generar el QR con el ID del evento
+        qr_filename = f"qr_evento_{evento.id}.png"
+        evento.qr_filename = qr_filename
+
+        # Crear QR con URL para escaneo
+        #url_qr = url_for('escanear_evento_qr', evento_id=evento.id, _external=True)
+        url_qr = f'https://192.168.100.45:5000/escanear_evento/{evento.id}'
+        qr = qrcode.make(url_qr)
+
+        ruta_qr = os.path.join('app', 'static', 'qr_eventos')
+        os.makedirs(ruta_qr, exist_ok=True)
+        filename = f'evento_{evento.id}.png'
+        path_completo = os.path.join(ruta_qr, filename)
+        qr.save(path_completo)
+
+        evento.qr_filename = filename
+        db.session.commit()
+
+        flash('Código QR de evento creado', 'exito')
+        return redirect(url_for('panel_admin'))
+
+    return render_template('crear_qr_evento.html')
+
+
+@app.route('/escanear_evento/<int:evento_id>')
+def escanear_evento_con_ubicacion(evento_id):
+    evento = EventoQR.query.get_or_404(evento_id)
+    return render_template('escanear_evento_con_ubicacion.html', evento=evento)
+
+from geopy.distance import geodesic
+
+
+@app.route('/validar_ubicacion_evento', methods=["POST"])
+def validar_ubicacion_evento():
+    print("🔍 Recibiendo petición de validación de ubicación")
+    data = request.get_json()
+    lat = data.get("lat")
+    lon = data.get("lon")
+    evento_id = data.get("evento_id")
+    familia_id = session.get("familia_id")
+
+    if not lat or not lon or not familia_id:
+        return jsonify({"error": "Faltan datos o no estás logueado"}), 400
+
+    evento = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+
+    if not evento or not familia:
+        return jsonify({"error": "Datos inválidos"}), 404
+
+    distancia = geodesic((evento.latitud, evento.longitud), (lat, lon)).meters
+    print(f"📍 Distancia calculada: {distancia:.2f} metros")
+
+    if distancia > 100:
+        return jsonify({"redirect": url_for("ubicacion_invalida", evento_id=evento.id)})
+
+    ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
+    if ya_registrado:
+        return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id, ya_asistio=1)})
+
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(familia_id=familia.id, evento_id=evento.id))
+    db.session.add(Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
+    db.session.commit()
+
+    return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
+
+
+
+@app.route("/asistencia_exitosa/<int:evento_id>")
+def asistencia_exitosa(evento_id):
+    ya_asistio = request.args.get("ya_asistio", default="0") == "1"
+    evento = EventoQR.query.get_or_404(evento_id)
+    familia_id = session.get("familia_id")
+    familia = Familia.query.get_or_404(familia_id)
+    return render_template("asistencia_exitosa.html", evento=evento, familia=familia, ya_asistio=ya_asistio)
+
+
+@app.route('/ubicacion_invalida/<int:evento_id>')
+def ubicacion_invalida(evento_id):
+    evento = EventoQR.query.get_or_404(evento_id)
+    return render_template('ubicacion_invalida.html', evento=evento)
+
+@app.route('/admin/eliminar_evento/<int:evento_id>', methods=['POST'])
+def eliminar_evento(evento_id):
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+
+    evento = EventoQR.query.get_or_404(evento_id)
+
+    # Eliminar imagen QR si existe
+    if evento.qr_filename:
+        ruta_qr = os.path.join('app', 'static', 'qr_eventos', evento.qr_filename)
+        if os.path.exists(ruta_qr):
+            os.remove(ruta_qr)
+
+    # Eliminar registros asociados (opcional si usas relaciones)
+    registros = EventoQRRegistro.query.filter_by(evento_id=evento.id).all()
+    for r in registros:
+        db.session.delete(r)
+
+    # Eliminar el evento
+    db.session.delete(evento)
+    db.session.commit()
+
+    flash("Evento eliminado correctamente", "exito")
+    return redirect(url_for('panel_admin'))
 

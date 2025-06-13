@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificando ubicación</title>
+</head>
+<body>
+    <h2>Escaneando evento: {{ evento.nombre_evento }}</h2>
+    <p>Verificando ubicación...</p>
+
+    <script>
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const data = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            evento_id: {{ evento.id | tojson }}
+            };
+
+
+            fetch("/validar_ubicacion_evento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json().then(data => ({ status: res.status, body: data })))
+            .then(({ status, body }) => {
+                console.log("✅ Respuesta del servidor:", body);
+                if (status === 200 && body.redirect) {
+                    window.location.href = body.redirect;
+                } else if (body.error) {
+                    alert(body.error);
+                } else {
+                    alert("Ocurrió un error inesperado");
+                    console.error("❌ Respuesta inesperada:", body);
+                }
+            })
+            .catch(error => {
+                alert("No se pudo comunicar con el servidor.");
+                console.error("❌ Error en fetch:", error);
+            });
+        },
+        function(error) {
+            console.error("❌ Error de geolocalización:", error);
+            alert("No se pudo obtener tu ubicación: " + error.message);
+        }
+    );
+    </script>
+</body>
+</html>

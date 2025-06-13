@@ -52,13 +52,7 @@ class Admin(db.Model):
         return check_password_hash(self.password_hash, password)
     
         
-class EventoQR(db.Model):
-    __tablename__ = 'evento_qr'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre_evento = db.Column(db.String(100), nullable=False)
-    puntos = db.Column(db.Integer, nullable=False)
-    qr_filename = db.Column(db.String(200), nullable=False)  # 👈 ESTE CAMPO FALTABA
-    
+
 class EventoQRRegistro(db.Model):
     __tablename__ = 'evento_qr_registro'
     id = db.Column(db.Integer, primary_key=True)
@@ -72,4 +66,17 @@ class EventoQRRegistro(db.Model):
 class Beneficio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    puntos_requeridos = db.Column(db.Integer, nullable=False)    
+    puntos_requeridos = db.Column(db.Integer, nullable=False)
+    
+class EventoQR(db.Model):
+    __tablename__ = 'evento_qr'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre_evento = db.Column(db.String(100), nullable=False)
+    puntos = db.Column(db.Integer, nullable=False)
+    qr_filename = db.Column(db.String(200), nullable=False)
+    latitud = db.Column(db.Float)  # ← Nuevo campo
+    longitud = db.Column(db.Float)  # ← Nuevo campo
+    
+    

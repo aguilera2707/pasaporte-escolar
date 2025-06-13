@@ -5,6 +5,12 @@
     <title>Perfil de {{ familia.nombre }}</title>
 </head>
 <body>
+
+    <p style="text-align: right; margin: 10px;">
+    <a href="{{ url_for('logout_familia') }}" style="text-decoration: none; color: red; font-weight: bold;">
+        🔓 Cerrar sesión
+    </a>
+</p>
     <h1>¡Hola, {{ familia.nombre }}!</h1>
 
     <h2>Puntos actuales: {{ familia.puntos }}</h2>
