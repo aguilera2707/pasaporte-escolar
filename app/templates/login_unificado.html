@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .contenedor {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 400px;
+            margin: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .tabs button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            background: #ccc;
+            cursor: pointer;
+        }
+        .tabs button.active {
+            background: #3498db;
+            color: white;
+        }
+        form {
+            margin-top: 1rem;
+        }
+        input {
+            display: block;
+            margin: 10px auto;
+            padding: 8px;
+            width: 90%;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+    <div class="tabs">
+        <button id="btn-admin" class="active" onclick="mostrarFormulario('admin')">Administrador</button>
+        <button id="btn-familia" onclick="mostrarFormulario('familia')">Familia</button>
+    </div>
+
+    <!-- Formulario de administrador -->
+    <form id="form-admin" method="POST" action="{{ url_for('login') }}">
+        <input type="text" name="usuario" placeholder="Usuario admin" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <button type="submit">Ingresar</button>
+    </form>
+
+    <!-- Formulario de familia (con validación JS) -->
+    <form id="form-familia" onsubmit="return validarFamilia()" method="POST" action="{{ url_for('login_familia') }}" style="display:none;">
+        <input type="email" name="correo" id="correo-familia" placeholder="Correo de familia" required>
+        <input type="password" name="password" id="pass-familia" placeholder="Contraseña" required>
+        <button type="submit">Ingresar</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</div>
+
+<script>
+    function mostrarFormulario(tipo) {
+        document.getElementById('form-admin').style.display = tipo === 'admin' ? 'block' : 'none';
+        document.getElementById('form-familia').style.display = tipo === 'familia' ? 'block' : 'none';
+
+        document.getElementById('btn-admin').classList.toggle('active', tipo === 'admin');
+        document.getElementById('btn-familia').classList.toggle('active', tipo === 'familia');
+    }
+
+    function validarFamilia() {
+        const correo = document.getElementById('correo-familia').value.trim();
+        const pass = document.getElementById('pass-familia').value.trim();
+
+        if (!correo.includes('@')) {
+            alert("Por favor, ingresa un correo válido.");
+            return false;
+        }
+
+        if (pass.length < 4) {
+            alert("La contraseña debe tener al menos 4 caracteres.");
+            return false;
+        }
+
+        return true;
+    }
+</script>
+
+</body>
+</html>

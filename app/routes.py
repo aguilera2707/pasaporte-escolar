@@ -5,7 +5,6 @@ from datetime import datetime
 import csv, unicodedata
 from io import BytesIO, TextIOWrapper
 from werkzeug.security import check_password_hash
-from flask import send_file, url_for
 import qrcode
 import os
 from flask import send_file
@@ -41,7 +40,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('admin', None)
-    return redirect(url_for('login'))
+    return render_template('login_unificado.html')
 
 
 def quitar_acentos(cadena):
@@ -105,7 +104,7 @@ def lista_familias():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('login_unificado.html')
 
 from app.routes import quitar_acentos  # asegúrate de importar esta función si no está en el mismo archivo
 
@@ -496,32 +495,6 @@ def escanear_qr():
     return render_template('escanear.html')
 
 
-
-@app.route('/familia/<int:familia_id>/qr')
-def generar_qr(familia_id):
-    familia = Familia.query.get(familia_id)
-    if not familia:
-        return "Familia no encontrada", 404
-
-    # URL que irá dentro del QR
-    data = url_for('ver_familia', familia_id=familia_id, _external=True)
-
-    # Generar QR
-    qr = qrcode.make(data)
-
-    # Ruta absoluta al directorio raíz del proyecto
-    root_path = os.path.abspath(os.path.dirname(__file__))  # app/
-    project_root = os.path.abspath(os.path.join(root_path, '..'))
-    temp_folder = os.path.join(project_root, 'temp')
-    os.makedirs(temp_folder, exist_ok=True)
-
-    filename = f'temp_qr_familia_{familia_id}.png'
-    filepath = os.path.join(temp_folder, filename)
-
-    qr.save(filepath)
-
-    return send_file(filepath, mimetype='image/png')
-
 @app.route('/familia/<int:familia_id>/qr')
 def mostrar_qr_familia(familia_id):
     import qrcode
@@ -613,27 +586,6 @@ def escanear_qr_suma(familia_id):
     return f"¡Se sumaron {puntos} puntos a {familia.nombre}!"
 
 from flask import current_app
-
-@app.route('/generar_qr_prueba/<int:familia_id>')
-def generar_qr_prueba(familia_id):
-    import qrcode
-    import os
-
-    # Ruta a la carpeta qr dentro de static
-    qr_folder = os.path.join(current_app.root_path, 'static', 'qr')
-    os.makedirs(qr_folder, exist_ok=True)
-
-    # URL que irá en el QR
-    data = url_for('escanear_qr_suma', familia_id=familia_id, _external=True)
-
-    # Crear el código QR
-    qr_img = qrcode.make(data)
-    qr_filename = f'qr_prueba_familia_{familia_id}.png'
-    qr_path = os.path.join(qr_folder, qr_filename)
-
-    qr_img.save(qr_path)
-
-    return send_file(qr_path, mimetype='image/png')
 
 
 @app.route('/escanear_evento_directo/<int:evento_id>')
@@ -936,7 +888,7 @@ def crear_qr_evento():
 
         # Crear QR con URL para escaneo
         #url_qr = url_for('escanear_evento_qr', evento_id=evento.id, _external=True)
-        url_qr = f'https://192.168.100.45:5000/escanear_evento/{evento.id}'
+        url_qr = f'https://192.168.120.56:5000/escanear_evento/{evento.id}'
         qr = qrcode.make(url_qr)
 
         ruta_qr = os.path.join('app', 'static', 'qr_eventos')
@@ -983,7 +935,7 @@ def validar_ubicacion_evento():
     distancia = geodesic((evento.latitud, evento.longitud), (lat, lon)).meters
     print(f"📍 Distancia calculada: {distancia:.2f} metros")
 
-    if distancia > 100:
+    if distancia > 500:
         return jsonify({"redirect": url_for("ubicacion_invalida", evento_id=evento.id)})
 
     ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
