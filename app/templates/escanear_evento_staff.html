@@ -4,19 +4,7 @@
     <meta charset="UTF-8">
     <title>Escanear QR por Evento</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 2rem; }
-        h1 { color: #333; }
-        select, input, button {
-            padding: 0.5rem;
-            margin-top: 1rem;
-            display: block;
-            width: 100%;
-            max-width: 400px;
-        }
-        #resultado { margin-top: 1rem; color: green; font-weight: bold; }
-        #error { margin-top: 1rem; color: red; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/escanear.css') }}">
 </head>
 <body>
     <h1>Escanear código QR de familia</h1>

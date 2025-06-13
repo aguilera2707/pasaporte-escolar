@@ -1,0 +1,35 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f9f9f9;
+}
+.contenedor {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: auto;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.tabs button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    border: none;
+    background: #ccc;
+    cursor: pointer;
+}
+.tabs button.active {
+    background: #3498db;
+    color: white;
+}
+input {
+    display: block;
+    margin: 10px auto;
+    padding: 8px;
+    width: 90%;
+}
+.error {
+    color: red;
+    font-weight: bold;
+}

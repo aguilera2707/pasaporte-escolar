@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Perfil de Familia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
+
+
 <body>
     <form action="{{ url_for('generar_qr_staff', familia_id=familia.id) }}" method="POST">
     </form>

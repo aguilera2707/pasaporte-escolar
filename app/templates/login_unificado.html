@@ -3,46 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Iniciar Sesión</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 2rem;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-        .contenedor {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            max-width: 400px;
-            margin: auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .tabs button {
-            padding: 10px 20px;
-            margin: 0 5px;
-            border: none;
-            background: #ccc;
-            cursor: pointer;
-        }
-        .tabs button.active {
-            background: #3498db;
-            color: white;
-        }
-        form {
-            margin-top: 1rem;
-        }
-        input {
-            display: block;
-            margin: 10px auto;
-            padding: 8px;
-            width: 90%;
-        }
-        .error {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body>
 
@@ -59,7 +20,7 @@
         <button type="submit">Ingresar</button>
     </form>
 
-    <!-- Formulario de familia (con validación JS) -->
+    <!-- Formulario de familia -->
     <form id="form-familia" onsubmit="return validarFamilia()" method="POST" action="{{ url_for('login_familia') }}" style="display:none;">
         <input type="email" name="correo" id="correo-familia" placeholder="Correo de familia" required>
         <input type="password" name="password" id="pass-familia" placeholder="Contraseña" required>

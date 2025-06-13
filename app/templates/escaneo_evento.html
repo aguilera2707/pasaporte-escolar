@@ -3,7 +3,10 @@
 <head>
     <title>Escaneo de QR - {{ evento.nombre_evento }}</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/escanear.css') }}">
 </head>
+
+
 <body>
     <h1>Escanear QR de Familias para el evento: {{ evento.nombre_evento }}</h1>
     <p>ID del evento: {{ evento.id }}</p>

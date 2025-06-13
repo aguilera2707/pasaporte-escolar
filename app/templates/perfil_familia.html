@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Perfil de {{ familia.nombre }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
-<body>
 
-    <p style="text-align: right; margin: 10px;">
-    <a href="{{ url_for('logout_familia') }}" style="text-decoration: none; color: red; font-weight: bold;">
+
+<body>
+    <a href="{{ url_for('logout_familia') }}">
         🔓 Cerrar sesión
     </a>
 </p>

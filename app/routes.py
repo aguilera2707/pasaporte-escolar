@@ -995,3 +995,9 @@ def eliminar_evento(evento_id):
     flash("Evento eliminado correctamente", "exito")
     return redirect(url_for('panel_admin'))
 
+from flask import send_from_directory
+
+@app.route('/descargar_qr_evento/<filename>')
+def descargar_qr_evento(filename):
+    carpeta_qr = os.path.join(app.root_path, 'static', 'qr_eventos')
+    return send_from_directory(carpeta_qr, filename, as_attachment=True)

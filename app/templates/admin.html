@@ -1,44 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head>   
     <meta charset="UTF-8">
     <title>Panel de Administración</title>
-    <style>
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        #mensaje {
-            display: none;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
-        .btn-descargar {
-    background-color: #5dade2;
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-top: 5px;
-}
-.btn-descargar:hover {
-    background-color: #3498db;
-}
-    </style>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head> 
 <body>
     <p><a href="/logout">Cerrar sesión</a></p>
     <h1>Panel de Administración</h1>
@@ -118,8 +84,7 @@ document.getElementById("form-ir-a-evento").addEventListener("submit", function(
                 <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" title="Haz clic para ampliar">
                 </a>
                 <br>
-                <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" download>
-                <button type="button" class="btn-descargar">⬇️ Descargar QR</button>
+                <a href="{{ url_for('descargar_qr_evento', filename=evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
                 </a>
                 <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
                 <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
