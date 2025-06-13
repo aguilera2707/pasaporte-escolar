@@ -24,25 +24,50 @@
         .btn-danger:hover {
             background-color: #c0392b;
         }
+
+        .btn-descargar {
+    background-color: #5dade2;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+.btn-descargar:hover {
+    background-color: #3498db;
+}
     </style>
 </head>
 <body>
     <p><a href="/logout">Cerrar sesión</a></p>
     <h1>Panel de Administración</h1>
 
-    <h2>Eventos</h2>
-    <ul>
+    <h2>Escaneo de Eventos (Staff)</h2>
+<form method="get" id="form-ir-a-evento" style="margin-bottom: 30px;">
+    <label for="selector-evento"><strong>Selecciona un evento:</strong></label><br>
+    <select id="selector-evento" style="padding: 8px; width: 300px;">
+        <option value="">-- Elegir evento --</option>
         {% for evento in eventos %}
-            <li>
+            <option value="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
                 {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
-                <a href="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
-                    <button>Escanear QR de Familias</button>
-                </a>
-            </li>
-        {% else %}
-            <li>No hay eventos registrados.</li>
+            </option>
         {% endfor %}
-    </ul>
+    </select>
+    <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
+</form>
+
+<script>
+document.getElementById("form-ir-a-evento").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const url = document.getElementById("selector-evento").value;
+    if (url) {
+        window.location.href = url;
+    } else {
+        alert("Selecciona un evento válido.");
+    }
+});
+</script>
 
     <a href="{{ url_for('crear_beneficio') }}"><button>Crear beneficio</button></a>
 
@@ -81,7 +106,6 @@
                 <th>Nombre del Evento</th>
                 <th>Puntos</th>
                 <th>QR</th>
-                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -90,15 +114,19 @@
                 <td>{{ evento.nombre_evento }}</td>
                 <td>{{ evento.puntos }}</td>
                 <td>
-                    <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="100">
-                </td>
-                <td>
-                    <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
-                        <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
-                            🗑 Eliminar
-                        </button>
-                    </form>
-                </td>
+                <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" target="_blank">
+                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" title="Haz clic para ampliar">
+                </a>
+                <br>
+                <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" download>
+                <button type="button" class="btn-descargar">⬇️ Descargar QR</button>
+                </a>
+                <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
+                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
+                🗑 Eliminar
+        </button>
+    </form>
+</td>
             </tr>
             {% endfor %}
         </tbody>
