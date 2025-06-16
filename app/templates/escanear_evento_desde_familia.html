@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Escanear evento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 1rem;
+            background-color: #f9f9f9;
+        }
+        video {
+            width: 100%;
+            max-width: 400px;
+            margin: 1rem auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+        }
+        .mensaje {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Escanea el QR del evento</h2>
+    <video id="video" autoplay playsinline></video>
+    <p class="mensaje" id="mensaje">Esperando escaneo...</p>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+        const codeReader = new ZXing.BrowserQRCodeReader();
+        const videoElement = document.getElementById('video');
+        const mensaje = document.getElementById('mensaje');
+
+        async function iniciarEscaneo() {
+            try {
+                const devices = await codeReader.getVideoInputDevices();
+                const primeraCamara = devices[0].deviceId;
+
+                codeReader.decodeFromVideoDevice(primeraCamara, videoElement, async (result, err) => {
+                    if (result) {
+                        const urlEscaneada = result.text;
+                        mensaje.textContent = "Código escaneado, validando...";
+
+                        try {
+                            // Enviar URL al backend para validar y registrar asistencia
+                            const respuesta = await fetch("/admin/registrar_asistencia_evento", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ qr_url: urlEscaneada })
+                            });
+
+                            const data = await respuesta.json();
+
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            } else if (data.mensaje) {
+                                mensaje.textContent = data.mensaje;
+                            } else {
+                                mensaje.textContent = data.error || "Error al registrar asistencia";
+                            }
+
+                            codeReader.reset();
+                        } catch (err) {
+                            mensaje.textContent = "❌ Error al enviar datos al servidor.";
+                        }
+                    }
+                });
+            } catch (error) {
+                mensaje.textContent = "❌ No se pudo acceder a la cámara.";
+            }
+        }
+
+        iniciarEscaneo();
+    </script>
+
+</body>
+</html>

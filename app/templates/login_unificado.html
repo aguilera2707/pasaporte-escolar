@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
@@ -27,9 +28,12 @@
         <button type="submit">Ingresar</button>
     </form>
 
-    {% if error %}
-        <p class="error">{{ error }}</p>
+    <!-- Mensajes de error con flash -->
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+    {% if messages %}
+        <div class="error">{{ messages[0] }}</div>
     {% endif %}
+    {% endwith %}
 </div>
 
 <script>
@@ -57,6 +61,12 @@
 
         return true;
     }
+
+    {% if active_tab %}
+    window.onload = function () {
+        mostrarFormulario("{{ active_tab }}");
+    };
+    {% endif %}
 </script>
 
 </body>

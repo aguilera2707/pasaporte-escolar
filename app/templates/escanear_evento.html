@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear evento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 1rem;
+            background: #f4f6f9;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        video {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .mensaje {
+            margin-top: 1rem;
+            font-size: 1rem;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Escanea el código QR del evento</h1>
+    <video id="video" autoplay></video>
+    <p class="mensaje" id="mensaje">Esperando escaneo...</p>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        const mensaje = document.getElementById("mensaje");
+
+        function redirigirConQR(qr) {
+            const match = qr.match(/\/escanear_evento\/(\d+)/);
+            if (match && match[1]) {
+                const eventoId = match[1];
+                mensaje.textContent = "Evento detectado, redirigiendo...";
+                window.location.href = `/escanear_evento/${eventoId}`;
+            } else {
+                mensaje.textContent = "QR inválido. Asegúrate de escanear un código válido.";
+            }
+        }
+
+        function iniciarEscaneo() {
+            const html5QrCode = new Html5Qrcode("video");
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length) {
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: 250 },
+                        qrCodeMessage => {
+                            html5QrCode.stop().then(() => {
+                                redirigirConQR(qrCodeMessage);
+                            });
+                        },
+                        error => {
+                            mensaje.textContent = "Escaneando...";
+                        }
+                    ).catch(err => {
+                        mensaje.textContent = "No se pudo iniciar la cámara: " + err;
+                    });
+                } else {
+                    mensaje.textContent = "No se encontró ninguna cámara.";
+                }
+            });
+        }
+
+        iniciarEscaneo();
+    </script>
+</body>
+</html>

@@ -2,53 +2,128 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil de {{ familia.nombre }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil_familia.css') }}">
 </head>
-
-
 <body>
-    <a href="{{ url_for('logout_familia') }}">
-        🔓 Cerrar sesión
-    </a>
-</p>
-    <h1>¡Hola, {{ familia.nombre }}!</h1>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍👩‍👧 ¡Hola, {{ familia.nombre }}!</h1>
+            <a class="logout" href="{{ url_for('logout_familia') }}">🔓 Cerrar sesión</a>
+        </div>
 
-    <h2>Puntos actuales: {{ familia.puntos }}</h2>
+        <div class="puntos">
+            <h2>Puntos actuales: <span>{{ familia.puntos }}</span></h2>
+        </div>
 
-    <h2>Tu código QR</h2>
-    <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia" width="200">
-    <br>
-    <a href="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" download>Descargar QR</a>
+        <div class="qr-section">
+            <h2>Tu código QR</h2>
+            <div class="qr-wrapper">
+                <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
+                <form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
+                    <button class="btn-download" type="submit">📥 Descargar QR</button>
+                </form>
 
+                {% if ultimo_evento %}
+                    <button id="btn-escanear">📷 Escanear nuevo evento</button>
 
-    <h2>Beneficios para canjear</h2>
-<table border="1">
-    <tr>
-        <th>Beneficio</th>
-        <th>Puntos requeridos</th>
-    </tr>
-    {% for beneficio in beneficios %}
-    <tr>
-        <td>{{ beneficio.nombre }}</td>
-        <td>{{ beneficio.puntos_requeridos }}</td>
-    </tr>
-    {% endfor %}
-</table>
+                    <div id="scanner-container" style="display: none; margin-top: 20px;">
+                        <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
+                        <p id="scan-status">Apunta al código QR del evento</p>
+                    </div>
+                {% else %}
+                    <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
+                {% endif %}
+            </div>
+        </div>
 
-    <h2>Historial de transacciones</h2>
-    {% if transacciones %}
-        <ul>
-        {% for t in transacciones %}
-            <li>
-                {{ t.fecha.strftime('%Y-%m-%d %H:%M') }} - 
-                {{ 'Ganaste' if t.tipo == 'suma' else 'Canjeaste' }} {{ t.puntos }} puntos -
-                {{ t.descripcion or 'Sin descripción' }}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No hay transacciones registradas.</p>
-    {% endif %}
+        <div class="beneficios">
+            <h2>🎁 Beneficios disponibles</h2>
+            {% if beneficios %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Beneficio</th>
+                            <th>Puntos requeridos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for beneficio in beneficios %}
+                        <tr>
+                            <td>{{ beneficio.nombre }}</td>
+                            <td>{{ beneficio.puntos_requeridos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay beneficios disponibles actualmente.</p>
+            {% endif %}
+        </div>
+
+        <div class="historial">
+            <h2>📜 Historial de transacciones</h2>
+            {% if transacciones %}
+                <div class="transacciones-scroll">
+                    {% for t in transacciones %}
+                        <div class="transaccion-card">
+                            <p class="fecha">{{ t.fecha.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p class="detalle">
+                                <strong>
+                                    {{ '✅ Ganaste' if t.tipo == 'suma' else '🔻 Canjeaste' }}
+                                    {{ t.puntos }} puntos
+                                </strong>
+                            </p>
+                            <p class="descripcion">{{ t.descripcion or 'Sin descripción' }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No hay transacciones registradas.</p>
+            {% endif %}
+        </div>
+    </div>
+<script src="{{ url_for('static', filename='js/qr-scanner.min.js') }}"></script>
+<script>
+    const scannerContainer = document.getElementById('scanner-container');
+    const videoElem = document.getElementById('qr-video');
+    const statusText = document.getElementById('scan-status');
+    const scanButton = document.getElementById('btn-escanear');
+
+    let scanner = null;
+
+    scanButton?.addEventListener('click', () => {
+        scannerContainer.style.display = 'block';
+
+        if (!scanner) {
+            scanner = new QrScanner(videoElem, result => {
+                statusText.textContent = '⏳ Enviando QR...';
+                scanner.stop();
+
+                try {
+                    const url = new URL(result);
+                    const path = url.pathname;
+                    if (path.startsWith("/escanear_evento/")) {
+                        window.location.href = path; // 🔁 Redirige para validar ubicación
+                    } else {
+                        alert("QR inválido");
+                        scanner.start();
+                    }
+                } catch (e) {
+                    alert("Error al procesar el QR");
+                    scanner.start();
+                }
+            });
+        }
+
+        QrScanner.hasCamera().then(hasCam => {
+            if (!hasCam) return alert('No se detectó cámara');
+            scanner.start();
+            statusText.textContent = '📷 Escanea el código del evento';
+        });
+    });
+</script>
+
 </body>
 </html>

@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash, Response
 from app import app, db
 from app.models import Familia, MovimientoPuntos, Transaccion, Admin, Beneficio
-from datetime import datetime
+from datetime import datetime , timedelta
 import csv, unicodedata
 from io import BytesIO, TextIOWrapper
 from werkzeug.security import check_password_hash
@@ -9,32 +9,33 @@ import qrcode
 import os
 from flask import send_file
 from app.models import EventoQR, EventoQRRegistro
+from flask import flash
+from flask import flash, redirect, url_for, render_template, request, session
+from app.models import Familia
 
-
-@app.route('/admin')
+@app.route("/admin")
 def panel_admin():
-    if 'admin' not in session:
-        return redirect(url_for('login'))
-
-    familias = Familia.query.all()
-    eventos = EventoQR.query.all()  # 👈 agregar esta línea
-    return render_template('admin.html', familias=familias, eventos=eventos)  # 👈 pasar eventos
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()  # <-- Agrega esto
+    return render_template("admin.html", eventos=eventos)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        usuario = request.form.get('usuario')
-        password = request.form.get('password')
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        password = request.form["password"]
 
         admin = Admin.query.filter_by(usuario=usuario).first()
         if admin and admin.verificar_password(password):
-            session['admin'] = admin.usuario  # Guardamos la sesión
-            return redirect(url_for('panel_admin'))
+            session["admin_id"] = admin.id
+            return redirect(url_for("panel_admin"))
         else:
-            return render_template('login.html', error="Usuario o contraseña incorrectos")
+            flash("Credenciales inválidas para administrador", "error")
+            return render_template("login_unificado.html", active_tab="admin")
+    return render_template("login_unificado.html", active_tab="admin")
 
-    return render_template('login.html')
 
 
 @app.route('/logout')
@@ -388,7 +389,8 @@ def registrar_transaccion_web(familia_id):
         familia_id=familia_id,
         tipo=tipo,
         puntos=puntos_finales,
-        descripcion=descripcion
+        descripcion=descripcion,
+        fecha=datetime.utcnow() - timedelta(hours=6)
     )
 
     familia.puntos += puntos_finales
@@ -511,21 +513,21 @@ def mostrar_qr_familia(familia_id):
 
     return send_file(ruta_temp, mimetype='image/png')
 
-@app.route('/login_familia', methods=['GET', 'POST'])
+
+@app.route("/login_familia", methods=["GET", "POST"])
 def login_familia():
-    if request.method == 'POST':
-        correo = request.form.get('correo')
-        password = request.form.get('password')
+    if request.method == "POST":
+        correo = request.form["correo"]
+        password = request.form["password"]
 
         familia = Familia.query.filter_by(correo=correo).first()
         if familia and familia.password == password:
-            session['familia_id'] = familia.id
-            return redirect(url_for('perfil_familia', familia_id=familia.id))
+            session["familia_id"] = familia.id
+            return redirect(url_for("perfil_familia", familia_id=familia.id))
         else:
-            return render_template('login_familia.html', error="Credenciales incorrectas")
-
-    return render_template('login_familia.html')
-
+            flash("Credenciales inválidas para familia", "error")
+            return render_template("login_unificado.html", active_tab="familia")
+    return render_template("login_unificado.html", active_tab="familia")
 
 @app.route('/logout_familia')
 def logout_familia():
@@ -540,8 +542,16 @@ def perfil_familia(familia_id):
 
     transacciones = Transaccion.query.filter_by(familia_id=familia_id).order_by(Transaccion.fecha.desc()).all()
     beneficios = Beneficio.query.all()
+    ultimo_evento = EventoQR.query.order_by(EventoQR.id.desc()).first()  # 🔹 nuevo
 
-    return render_template('perfil_familia.html', familia=familia, transacciones=transacciones, beneficios=beneficios)
+    return render_template(
+        'perfil_familia.html',
+        familia=familia,
+        transacciones=transacciones,
+        beneficios=beneficios,
+        ultimo_evento=ultimo_evento  # 🔹 nuevo
+    )
+
 
 
 @app.route('/familia/<int:familia_id>/generar_qr', methods=['POST'])
@@ -814,7 +824,6 @@ def registrar_asistencia_evento():
     if not qr_url or not evento_id:
         return jsonify({"error": "Datos incompletos"}), 400
 
-    # Extraer ID de familia desde la URL escaneada
     from urllib.parse import urlparse
     import re
 
@@ -839,28 +848,26 @@ def registrar_asistencia_evento():
     if ya_escaneo:
         return jsonify({"error": f"{familia.nombre} ya registró asistencia a {evento.nombre_evento}"}), 400
 
-    # ✅ Sumar puntos
     familia.puntos += evento.puntos
 
-    # ✅ Guardar registro de asistencia
     db.session.add(EventoQRRegistro(evento_id=evento.id, familia_id=familia.id))
 
-    # ✅ Guardar en historial
     transaccion = Transaccion(
         familia_id=familia.id,
         tipo='suma',
         puntos=evento.puntos,
-        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}",
+        fecha=datetime.utcnow() - timedelta(hours=6)
     )
     db.session.add(transaccion)
-
     db.session.commit()
 
     return jsonify({"mensaje": f"Asistencia registrada correctamente. Se sumaron {evento.puntos} puntos a {familia.nombre}"}), 200
 
+
 @app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
 def crear_qr_evento():
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
@@ -1001,3 +1008,65 @@ from flask import send_from_directory
 def descargar_qr_evento(filename):
     carpeta_qr = os.path.join(app.root_path, 'static', 'qr_eventos')
     return send_from_directory(carpeta_qr, filename, as_attachment=True)
+
+@app.route('/descargar_qr/<int:familia_id>')
+def descargar_qr(familia_id):
+    ruta = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia_id}.png')
+    return send_file(ruta, as_attachment=True)
+
+@app.route('/escanear_evento/<int:evento_id>')
+def escanear_evento_directo(evento_id):
+    if "familia_id" not in session:
+        return redirect(url_for("login_familia"))
+
+    evento = EventoQR.query.get_or_404(evento_id)
+    return render_template("escanear_evento.html", evento=evento)
+
+@app.route('/familia/escanear_evento')
+def escanear_evento_desde_familia():
+    if 'familia_id' not in session:
+        return redirect(url_for('login_familia'))
+    return render_template('escanear_evento_desde_familia.html')
+
+@app.route('/validar_qr_evento', methods=["POST"])
+def validar_qr_evento():
+    data = request.get_json()
+    qr_url = data.get("qr_url")
+    familia_id = session.get("familia_id")
+
+    if not qr_url or not familia_id:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    # Extraer evento_id desde la URL del QR
+    from urllib.parse import urlparse
+    import re
+
+    parsed_url = urlparse(qr_url)
+    match = re.search(r'/escanear_evento/(\d+)', parsed_url.path)
+
+    if not match:
+        return jsonify({"error": "No se pudo extraer el ID del evento"}), 400
+
+    evento_id = int(match.group(1))
+    evento = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+
+    if not evento or not familia:
+        return jsonify({"error": "Evento o familia no encontrada"}), 404
+
+    ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
+    if ya_registrado:
+        return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id, ya_asistio=1)})
+
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(familia_id=familia.id, evento_id=evento.id))
+    db.session.add(Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
+    db.session.commit()
+
+    return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
+

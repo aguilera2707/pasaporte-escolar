@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Ubicación fuera de rango</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia.css') }}">
 </head>
 <body>
     <div class="mensaje">
         <h1>❌ Ubicación inválida</h1>
         <p><strong>Debes estar en la ubicación del evento para generar tus puntos.</strong></p>
         <p>No se han sumado puntos en este registro.</p>
-        <a href="/perfil_familia">← Volver a mi perfil</a>
+        <a href="{{ url_for('perfil_familia', familia_id=session['familia_id']) }}">← Volver a mi perfil</a>
     </div>
 </body>
 </html>

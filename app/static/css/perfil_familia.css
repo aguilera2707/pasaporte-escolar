@@ -1,0 +1,225 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f8;
+    margin: 0;
+    padding: 1rem;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.header h1 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.logout {
+    color: #8e44ad;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.logout:hover {
+    text-decoration: underline;
+}
+
+.puntos h2 {
+    color: #34495e;
+}
+
+.qr-section {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.qr-section img {
+    width: 200px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.btn-download {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 15px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.btn-download:hover {
+    background-color: #2980b9;
+}
+
+.beneficios h2,
+.historial h2 {
+    margin-top: 2rem;
+    color: #2c3e50;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+table th,
+table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+table th {
+    background-color: #ecf0f1;
+}
+
+.historial ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.historial li {
+    background-color: #fdfdfd;
+    border-left: 5px solid #bdc3c7;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .qr-section img {
+        width: 150px;
+    }
+
+    .btn-download {
+        font-size: 0.85rem;
+    }
+
+    table th,
+    table td {
+        font-size: 0.9rem;
+    }
+
+    .header h1 {
+        font-size: 1.4rem;
+    }
+}
+.qr-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Historial con tarjetas bonitas */
+.transacciones-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.transaccion-card {
+    background-color: #ffffff;
+    border-left: 5px solid #2980b9;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+    transition: transform 0.2s;
+}
+
+.transaccion-card:hover {
+    transform: scale(1.01);
+}
+
+.transaccion-card .fecha {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.transaccion-card .detalle {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.transaccion-card .descripcion {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+#btn-escanear {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 10px 22px;
+    background-color: #27ae60; /* Verde armónico */
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#btn-escanear:hover {
+    background-color: #219653;
+    transform: translateY(-2px);
+}
+
+#btn-escanear:active {
+    transform: translateY(0);
+}
+
+#qr-video {
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    height: auto;
+}
+
+/* Reglas específicas para pantallas pequeñas */
+@media screen and (max-width: 480px) {
+    #qr-video {
+        max-width: 280px;
+        height: auto;
+        border-radius: 8px;
+    }
+}
+
+#scanner-container {
+    text-align: center;
+    margin-top: 20px;
+}
