@@ -12,6 +12,16 @@ from app.models import EventoQR, EventoQRRegistro
 from flask import flash
 from flask import flash, redirect, url_for, render_template, request, session
 from app.models import Familia
+from functools import wraps
+from flask import session, redirect, url_for
+
+def login_requerido_admin(f):
+    @wraps(f)
+    def decorada(*args, **kwargs):
+        if "admin_id" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorada
 
 @app.route("/admin")
 def panel_admin():
@@ -439,7 +449,7 @@ def exportar_transacciones(familia_id):
     
 @app.route('/crear_admin', methods=['GET', 'POST'])
 def crear_admin():
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
@@ -466,7 +476,7 @@ def crear_admin():
 
 @app.route('/admin/usuarios')
 def lista_administradores():
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
     
     administradores = Admin.query.all()
@@ -474,7 +484,7 @@ def lista_administradores():
 
 @app.route('/admin/usuarios/eliminar/<int:admin_id>', methods=['POST'])
 def eliminar_administrador(admin_id):
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     admin = Admin.query.get(admin_id)
@@ -492,7 +502,7 @@ def eliminar_administrador(admin_id):
 
 @app.route('/escanear')
 def escanear_qr():
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
     return render_template('escanear.html')
 
@@ -630,7 +640,7 @@ def escanear_evento_qr(evento_id):
 
 @app.route('/admin/crear_beneficio', methods=['GET', 'POST'])
 def crear_beneficio():
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':

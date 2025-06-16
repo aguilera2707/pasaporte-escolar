@@ -1,50 +1,112 @@
+/* ========== Estilo general ========== */
 body {
     font-family: Arial, sans-serif;
-    padding: 2rem;
     background-color: #f5f5f5;
+    padding: 2rem;
+    margin: 0;
+    color: #2c3e50;
 }
+
+h1 {
+    font-size: 28px;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+select,
+input[type="text"] {
+    padding: 8px;
+    font-size: 15px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    max-width: 100%;
+}
+
 button {
     cursor: pointer;
 }
-.btn-primary{
-    background-color: #008cff;
-    color: white;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
 
+/* ========== Botones ========== */
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
 }
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
 .btn-danger {
     background-color: #e74c3c;
     color: white;
-    padding: 6px 10px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
 }
+
 .btn-danger:hover {
     background-color: #c0392b;
 }
-#mensaje {
-    display: none;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
+
+a {
+    color: #8e44ad;
+    text-decoration: none;
     font-weight: bold;
+    display: inline-block;
+    margin: 6px 0;
 }
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ========== Tabla ========== */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
+
+th {
+    background-color: #f0f4f8;
+    font-weight: bold;
+}
+
 th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
     text-align: left;
 }
+
+/* ========== Mensajes y otros ========== */
+#mensaje {
+    display: none;
+    padding: 12px;
+    margin: 12px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    background-color: #fffae6;
+    color: #555;
+    border: 1px solid #ffe58f;
+}
+
+/* ========== Responsive ========== */
 @media (max-width: 600px) {
     body {
-        padding: 10px;
-        font-size: 16px;
+        padding: 1rem;
+        font-size: 15px;
     }
 
     h1 {
@@ -54,7 +116,6 @@ th, td {
 
     table {
         font-size: 14px;
-        width: 100%;
         overflow-x: auto;
     }
 
@@ -68,4 +129,36 @@ th, td {
         text-align: center;
         margin-top: 10px;
     }
+}
+.admin-navbar {
+    background-color: #6c5ce7;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.admin-navbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.admin-navbar ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    background-color: #a29bfe;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.admin-navbar ul li a:hover {
+    background-color: #81ecec;
+    color: #2d3436;
 }
