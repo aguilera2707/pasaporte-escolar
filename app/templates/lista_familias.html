@@ -1,57 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Cuponera Escolar</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}">
+    <meta charset="UTF-8">
+    <title>Lista de Familias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <body>
+    <a href="{{ url_for('panel_admin') }}" class="btn-primary">← Volver al panel</a>
+
     <h1>Lista de Familias</h1>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-    <ul id="mensajes-flash">
-    {% for category, message in messages %}
-        <li class="flash {{ category }}">{{ message }}</li>
-    {% endfor %}
-    </ul>
-{% endif %}
-{% endwith %}
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div id="mensajes-flash">
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
 
-<h2>Registrar nueva familia</h2>
-<form method="POST" action="{{ url_for('lista_familias') }}">
-    <input type="text" name="nombre" placeholder="Nombre" required>
-    <input type="email" name="correo" placeholder="Correo" required>
-    <input type="password" name="password" placeholder="Contraseña" required>
-    <button type="submit">Registrar</button>
-</form>
+    <h2>Registrar nueva familia</h2>
+    <form method="POST" action="{{ url_for('lista_familias') }}">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="email" name="correo" placeholder="Correo" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <button type="submit">Registrar</button>
+    </form>
 
     <h2>Familias registradas</h2>
-    <ul>
-        {% for familia in familias %}
-            <li>
-                <a href="{{ url_for('ver_familia', familia_id=familia.id) }}">
-                    {{ familia.nombre }} ({{ familia.puntos }} puntos)
-                </a>
-            </li>
-        {% else %}
-            <li>No hay familias registradas.</li>
-        {% endfor %}
-    </ul>
+    <table id="tabla-familias" class="display">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Contraseña</th>
+                <th>Puntos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in familias %}
+            <tr>
+                <td>{{ f.id }}</td>
+                <td>{{ f.nombre }}</td>
+                <td>{{ f.correo }}</td>
+                <td>{{ f.password }}</td>
+                <td>{{ f.puntos }}</td>
+                <td>
+                    <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a> |
+                    <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a> |
+                    <button onclick="sumar({{ f.id }})">➕</button>
+                    <button onclick="canjear({{ f.id }})">➖</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-    <h2>Buscar familia</h2>
-<form method="GET" action="{{ url_for('lista_familias') }}">
-    <input type="text" name="buscar" placeholder="Buscar por nombre" value="{{ buscar or '' }}">
-    <button type="submit">Buscar</button>
-</form>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-<script>
-  // Oculta los mensajes flash después de 4 segundos
-setTimeout(function() {
-    const mensajes = document.getElementById('mensajes-flash');
-    if (mensajes) {
-    mensajes.style.display = 'none';
-    }
-}, 4000);
-</script>
+    <script>
+        $(document).ready(function () {
+            $('#tabla-familias').DataTable({
+                language: {
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
+                    paginate: {
+                        previous: "←",
+                        next: "→"
+                    },
+                    zeroRecords: "No se encontraron coincidencias",
+                },
+                pageLength: 5,
+                lengthMenu: [5, 10, 20]
+            });
+        });
+
+        function mostrarMensaje(texto, tipo = 'exito') {
+            const div = document.createElement('div');
+            div.className = `flash ${tipo}`;
+            div.textContent = texto;
+            document.body.insertBefore(div, document.body.firstChild);
+            setTimeout(() => div.remove(), 4000);
+        }
+
+        function sumar(id) {
+            const puntos = prompt("¿Cuántos puntos deseas sumar?");
+            if (!puntos || isNaN(puntos)) return;
+
+            const motivo = prompt("Motivo:");
+            if (!motivo) return;
+
+            fetch('/transaccion', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    familia_id: id,
+                    puntos: parseInt(puntos),
+                    tipo: "suma",
+                    descripcion: motivo
+                })
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    mostrarMensaje(data.error, 'error');
+                } else {
+                    mostrarMensaje(data.mensaje, 'exito');
+                    location.reload();
+                }
+            });
+        }
+
+        function canjear(id) {
+            const puntos = prompt("¿Cuántos puntos deseas canjear?");
+            if (!puntos || isNaN(puntos)) return;
+
+            const motivo = prompt("Motivo:");
+            if (!motivo) return;
+
+            fetch('/transaccion', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    familia_id: id,
+                    puntos: parseInt(puntos),
+                    tipo: "canje",
+                    descripcion: motivo
+                })
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    mostrarMensaje(data.error, 'error');
+                } else {
+                    mostrarMensaje(data.mensaje, 'exito');
+                    location.reload();
+                }
+            });
+        }
+
+        // Ocultar mensajes flash
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
+    </script>
 </body>
 </html>

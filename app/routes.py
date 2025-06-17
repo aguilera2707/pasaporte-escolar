@@ -1,19 +1,22 @@
-from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash, Response
-from app import app, db
-from app.models import Familia, MovimientoPuntos, Transaccion, Admin, Beneficio
-from datetime import datetime , timedelta
-import csv, unicodedata
-from io import BytesIO, TextIOWrapper
-from werkzeug.security import check_password_hash
-import qrcode
-import os
-from flask import send_file
-from app.models import EventoQR, EventoQRRegistro
-from flask import flash
-from flask import flash, redirect, url_for, render_template, request, session
-from app.models import Familia
+from flask import (
+    Flask, jsonify, request, render_template,
+    redirect, url_for, session, flash, Response, send_file
+)
 from functools import wraps
-from flask import session, redirect, url_for
+from datetime import datetime, timedelta
+from io import BytesIO, TextIOWrapper
+import os
+import csv
+import unicodedata
+import qrcode
+
+from app import app, db
+from app.models import (
+    Familia, MovimientoPuntos, Transaccion,
+    Admin, Beneficio, LugarFrecuente,
+    EventoQR, EventoQRRegistro
+)
+
 
 def login_requerido_admin(f):
     @wraps(f)
@@ -27,8 +30,20 @@ def login_requerido_admin(f):
 def panel_admin():
     if "admin_id" not in session:
         return redirect(url_for("login"))
-    eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()  # <-- Agrega esto
-    return render_template("admin.html", eventos=eventos)
+
+    eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()
+    familias = Familia.query.all()  # ← ESTO ES CLAVE
+    ultimo_evento = eventos[0] if eventos else None
+    otros_eventos = eventos[1:] if len(eventos) > 1 else []
+
+    return render_template(
+        "admin.html",
+        eventos=eventos,
+        familias=familias,
+        ultimo_evento=ultimo_evento,
+        otros_eventos=otros_eventos
+    )
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -643,28 +658,32 @@ def crear_beneficio():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
 
+    # Obtener siempre los beneficios para mostrar la tabla
+    beneficios = Beneficio.query.all()
+
     if request.method == 'POST':
         nombre = request.form.get('nombre')
         puntos_requeridos = request.form.get('puntos_requeridos')
 
         if not nombre or not puntos_requeridos:
             flash("Todos los campos son obligatorios", "error")
-            return render_template('crear_beneficio.html')
+            return render_template('crear_beneficio.html', beneficios=beneficios)
 
         try:
             puntos_requeridos = int(puntos_requeridos)
         except ValueError:
             flash("Los puntos deben ser un número", "error")
-            return render_template('crear_beneficio.html')
+            return render_template('crear_beneficio.html', beneficios=beneficios)
 
         beneficio = Beneficio(nombre=nombre, puntos_requeridos=puntos_requeridos)
         db.session.add(beneficio)
         db.session.commit()
 
         flash("Beneficio creado exitosamente", "success")
-        return redirect(url_for('panel_admin'))
+        return redirect(url_for('crear_beneficio'))  # Redirige a la misma vista para ver el nuevo canje
 
-    return render_template('crear_beneficio.html')
+    return render_template('crear_beneficio.html', beneficios=beneficios)
+
 
 @app.route('/escanear_qr_evento/<int:evento_id>/<int:familia_id>')
 def escanear_qr_familia_en_evento(evento_id, familia_id):
@@ -875,52 +894,48 @@ def registrar_asistencia_evento():
     return jsonify({"mensaje": f"Asistencia registrada correctamente. Se sumaron {evento.puntos} puntos a {familia.nombre}"}), 200
 
 
+from app.models import LugarFrecuente  # asegúrate de importarlo
+
 @app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
 def crear_qr_evento():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        nombre = request.form['nombre_evento']
-        puntos = int(request.form['puntos'])
+    lugares = LugarFrecuente.query.all()
+    eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()
 
-        # ✅ NUEVO: Leer latitud y longitud del formulario
+    if request.method == 'POST':
+        nombre_evento = request.form['nombre_evento']
+        puntos = int(request.form['puntos'])
         latitud = float(request.form['latitud'])
         longitud = float(request.form['longitud'])
 
-        # Crear evento con latitud y longitud
         evento = EventoQR(
-            nombre_evento=nombre,
+            nombre_evento=nombre_evento,
             puntos=puntos,
             latitud=latitud,
-            longitud=longitud,
-            qr_filename="temporal.png"
+            longitud=longitud
         )
+
         db.session.add(evento)
-        db.session.commit()
+        db.session.flush()  # Para obtener el ID sin hacer commit
 
-        # Generar el QR con el ID del evento
-        qr_filename = f"qr_evento_{evento.id}.png"
+        qr_data = url_for('escanear_evento_con_ubicacion', evento_id=evento.id, _external=True)
+        qr_img = qrcode.make(qr_data)
+
+        qr_filename = f"evento_{evento.id}.png"
+        qr_path = os.path.join('app', 'static', 'qr_eventos', qr_filename)
+        os.makedirs(os.path.dirname(qr_path), exist_ok=True)
+        qr_img.save(qr_path)
+
         evento.qr_filename = qr_filename
-
-        # Crear QR con URL para escaneo
-        #url_qr = url_for('escanear_evento_qr', evento_id=evento.id, _external=True)
-        url_qr = f'https://192.168.120.56:5000/escanear_evento/{evento.id}'
-        qr = qrcode.make(url_qr)
-
-        ruta_qr = os.path.join('app', 'static', 'qr_eventos')
-        os.makedirs(ruta_qr, exist_ok=True)
-        filename = f'evento_{evento.id}.png'
-        path_completo = os.path.join(ruta_qr, filename)
-        qr.save(path_completo)
-
-        evento.qr_filename = filename
         db.session.commit()
 
-        flash('Código QR de evento creado', 'exito')
-        return redirect(url_for('panel_admin'))
+        flash('Evento QR creado con éxito.', 'success')
+        return redirect(url_for('crear_qr_evento'))
 
-    return render_template('crear_qr_evento.html')
+    return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
+
 
 
 @app.route('/escanear_evento/<int:evento_id>')
@@ -989,7 +1004,7 @@ def ubicacion_invalida(evento_id):
 
 @app.route('/admin/eliminar_evento/<int:evento_id>', methods=['POST'])
 def eliminar_evento(evento_id):
-    if 'admin' not in session:
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     evento = EventoQR.query.get_or_404(evento_id)
@@ -1080,3 +1095,160 @@ def validar_qr_evento():
 
     return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
 
+# Ruta en routes.py
+from flask import render_template, request, redirect, url_for, flash
+from app.models import Familia
+from app import db
+
+@app.route('/familia/<int:familia_id>/editar', methods=['GET', 'POST'])
+def editar_familia(familia_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    familia = Familia.query.get_or_404(familia_id)
+
+    if request.method == 'POST':
+        familia.nombre = request.form['nombre']
+        familia.correo = request.form['correo']
+        familia.password = request.form['password']  # En producción deberías hashearla
+
+        db.session.commit()
+        flash('Familia actualizada correctamente', 'success')
+        return redirect(url_for('panel_admin'))
+
+    return render_template('editar_familia.html', familia=familia)
+
+
+@app.route('/admin/crear_lugar', methods=['GET', 'POST'])
+def crear_lugar():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        latitud = request.form['latitud']
+        longitud = request.form['longitud']
+        nuevo_lugar = LugarFrecuente(nombre=nombre, latitud=latitud, longitud=longitud)
+        db.session.add(nuevo_lugar)
+        db.session.commit()
+        flash('Lugar creado con éxito.', 'success')
+        return redirect(url_for('crear_lugar'))
+
+    lugares = LugarFrecuente.query.all()
+    return render_template('crear_lugar.html', lugares=lugares)
+
+# Eliminar lugar
+@app.route('/admin/eliminar_lugar/<int:id>', methods=['POST'])
+def eliminar_lugar(id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    lugar = LugarFrecuente.query.get_or_404(id)
+    db.session.delete(lugar)
+    db.session.commit()
+    flash('Lugar eliminado correctamente.', 'success')
+    return redirect(url_for('crear_lugar'))
+
+# Editar lugar
+@app.route('/admin/editar_lugar/<int:id>', methods=['GET', 'POST'])
+def editar_lugar(id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    lugar = LugarFrecuente.query.get_or_404(id)
+
+    if request.method == 'POST':
+        lugar.nombre = request.form['nombre']
+        lugar.latitud = request.form['latitud']
+        lugar.longitud = request.form['longitud']
+        db.session.commit()
+        flash('Lugar actualizado correctamente.', 'success')
+        return redirect(url_for('crear_lugar'))
+
+    return render_template('editar_lugar.html', lugar=lugar)
+
+@app.route('/admin/eliminar_eventos', methods=['POST'])
+def eliminar_eventos():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    ids = request.form.getlist('eventos_seleccionados')
+
+    for evento_id in ids:
+        # Eliminar registros relacionados
+        registros = EventoQRRegistro.query.filter_by(evento_id=evento_id).all()
+        for r in registros:
+            db.session.delete(r)
+
+        # Eliminar evento
+        evento = EventoQR.query.get(evento_id)
+        if evento:
+            # Borrar el archivo QR si existe
+            ruta_qr = os.path.join('app', 'static', 'qr_eventos', evento.qr_filename)
+            if os.path.exists(ruta_qr):
+                os.remove(ruta_qr)
+
+            db.session.delete(evento)
+
+    db.session.commit()
+    flash('Eventos eliminados correctamente', 'success')
+    return redirect(url_for('crear_qr_evento'))
+
+@app.route('/admin/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
+def editar_evento(evento_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    evento = EventoQR.query.get_or_404(evento_id)
+
+    if request.method == 'POST':
+        evento.nombre_evento = request.form['nombre_evento']
+        evento.puntos = int(request.form['puntos'])
+        evento.latitud = float(request.form['latitud'])
+        evento.longitud = float(request.form['longitud'])
+
+        db.session.commit()
+        flash('Evento actualizado correctamente.', 'success')
+        return redirect(url_for('crear_qr_evento'))
+
+    return render_template('editar_evento.html', evento=evento)
+
+@app.route('/admin/editar_beneficio/<int:beneficio_id>', methods=['GET', 'POST'])
+def editar_beneficio(beneficio_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    beneficio = Beneficio.query.get_or_404(beneficio_id)
+
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        puntos_requeridos = request.form.get('puntos_requeridos')
+
+        if not nombre or not puntos_requeridos:
+            flash("Todos los campos son obligatorios", "error")
+            return redirect(url_for('editar_beneficio', beneficio_id=beneficio.id))
+
+        try:
+            puntos_requeridos = int(puntos_requeridos)
+        except ValueError:
+            flash("Los puntos deben ser un número", "error")
+            return redirect(url_for('editar_beneficio', beneficio_id=beneficio.id))
+
+        beneficio.nombre = nombre
+        beneficio.puntos_requeridos = puntos_requeridos
+        db.session.commit()
+        flash("Beneficio actualizado exitosamente", "success")
+        return redirect(url_for('crear_beneficio'))
+
+    return render_template('editar_beneficio.html', beneficio=beneficio)
+
+@app.route('/admin/eliminar_beneficio/<int:beneficio_id>', methods=['POST'])
+def eliminar_beneficio(beneficio_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    beneficio = Beneficio.query.get_or_404(beneficio_id)
+    db.session.delete(beneficio)
+    db.session.commit()
+    flash("Beneficio eliminado exitosamente", "success")
+    return redirect(url_for('crear_beneficio'))

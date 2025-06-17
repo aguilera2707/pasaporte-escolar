@@ -124,6 +124,26 @@
         });
     });
 </script>
+<script>
+let timeout;
+
+// Función que redirige al logout tras 5 minutos de inactividad
+function iniciarTemporizadorInactividad() {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        alert("Tu sesión ha expirado por inactividad.");
+        window.location.href = "{{ url_for('logout') }}";
+    }, 5 * 60 * 1000); // 5 minutos
+}
+
+// Reinicia el temporizador con cualquier actividad del usuario
+['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(event => {
+    document.addEventListener(event, iniciarTemporizadorInactividad);
+});
+
+iniciarTemporizadorInactividad();
+</script>
+
 
 </body>
 </html>

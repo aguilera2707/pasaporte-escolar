@@ -1,10 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear QR para Evento</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
+
+</head>
+<body>
+
 <h2>Crear QR para Evento</h2>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/escanear.css') }}">
+<a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
 
 <form method="POST">
     <input type="text" name="nombre_evento" placeholder="Nombre del evento" required>
     <input type="number" name="puntos" placeholder="Puntos a otorgar" required>
-    <button type="submit">Generar QR</button>
-    <input type="text" name="latitud" placeholder="Latitud" required>
-<input type="text" name="longitud" placeholder="Longitud" required>
+
+    <!-- Selector de lugares guardados -->
+    <label for="lugar_frecuente"><strong>Lugar frecuente:</strong></label>
+<select id="lugar_frecuente" onchange="llenarCoordenadas()" style="padding: 8px; width: 100%;">
+    <option value="">-- Seleccionar lugar frecuente --</option>
+    {% for lugar in lugares %}
+        <option value="{{ lugar.latitud }},{{ lugar.longitud }}">{{ lugar.nombre }}</option>
+    {% endfor %}
+</select>
+
+    <input type="text" id="latitud" name="latitud" placeholder="Latitud" required>
+    <input type="text" id="longitud" name="longitud" placeholder="Longitud" required>
+
+    <div class="form-footer">
+        <button type="submit">🎯 Generar QR</button>
+    </div>
 </form>
+
+<h2>Eventos Creados</h2>
+
+<form method="POST" action="{{ url_for('eliminar_eventos') }}">
+    <table id="tabla-eventos" class="display">
+        <thead>
+            <tr>
+                <th>Seleccionar</th>
+                <th>Nombre</th>
+                <th>Puntos</th>
+                <th>Latitud</th>
+                <th>Longitud</th>
+                <th>QR</th>
+                <th>Editar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in eventos %}
+            <tr>
+                <td><input type="checkbox" name="eventos_seleccionados" value="{{ e.id }}"></td>
+                <td>{{ e.nombre_evento }}</td>
+                <td>{{ e.puntos }}</td>
+                <td>{{ e.latitud }}</td>
+                <td>{{ e.longitud }}</td>
+                <td><img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}" width="50"></td>
+                <td><a href="{{ url_for('editar_evento', evento_id=e.id) }}">Editar</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" class="btn-danger">Eliminar seleccionados</button>
+
+</form>
+
+
+<script>
+    document.getElementById('lugar_guardado').addEventListener('change', function () {
+        const valor = this.value;
+        if (valor) {
+            const [lat, lng] = valor.split(',');
+            document.getElementById('latitud').value = lat;
+            document.getElementById('longitud').value = lng;
+        } else {
+            document.getElementById('latitud').value = '';
+            document.getElementById('longitud').value = '';
+        }
+    });
+</script>
+
+<script>
+function llenarCoordenadas() {
+    const select = document.getElementById('lugar_frecuente');
+    const valor = select.value;
+
+    if (valor) {
+        const [lat, lon] = valor.split(',');
+        document.querySelector('input[name="latitud"]').value = lat;
+        document.querySelector('input[name="longitud"]').value = lon;
+    } else {
+        document.querySelector('input[name="latitud"]').value = '';
+        document.querySelector('input[name="longitud"]').value = '';
+    }
+}
+</script>
+</body>
+</html>

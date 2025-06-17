@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Lugar Frecuente</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <a href="{{ url_for('panel_admin') }}" class="btn-primary">← Volver al panel</a>
+
+    <h1>Crear Lugar Frecuente</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div id="mensajes-flash">
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" style="margin-bottom: 2rem;">
+        <input type="text" name="nombre" placeholder="Nombre del lugar" required>
+        <input type="text" name="latitud" placeholder="Latitud" required>
+        <input type="text" name="longitud" placeholder="Longitud" required>
+        <button type="submit" class="btn-primary">Crear lugar</button>
+    </form>
+
+    {% if lugares %}
+    <h2>Lugares Frecuentes Guardados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Latitud</th>
+                <th>Longitud</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lugar in lugares %}
+            <tr>
+                <td>{{ lugar.id }}</td>
+                <td>{{ lugar.nombre }}</td>
+                <td>{{ lugar.latitud }}</td>
+                <td>{{ lugar.longitud }}</td>
+                <td>
+                    <a href="{{ url_for('editar_lugar', id=lugar.id) }}">✏️ Editar</a>
+                    |
+                    <form action="{{ url_for('eliminar_lugar', id=lugar.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Eliminar este lugar?')" class="btn-danger">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay lugares frecuentes guardados todavía.</p>
+    {% endif %}
+
+    <script>
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
+    </script>
+</body>
+</html>

@@ -5,52 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head> 
 <body>
     <p><a href="/logout">Cerrar sesión</a></p>
+
     <nav class="admin-navbar">
-<ul>
-    <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
-    <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Administradores</a></li>
-    <li><a href="{{ url_for('crear_admin') }}">➕ Nuevo Administrador</a></li>
-    <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Agregar Familia</a></li>
-    <li><a href="{{ url_for('crear_qr_evento') }}">📸 Crear QR Evento</a></li>
-</ul>
-</nav>
+        <ul>
+            <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
+            <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Administradores</a></li>
+            <li><a href="{{ url_for('crear_admin') }}">➕ Nuevo Administrador</a></li>
+            <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Agregar Familia</a></li>
+            <li><a href="{{ url_for('crear_qr_evento') }}">📸 Crear QR Evento</a></li>
+            <li><a href="{{ url_for('crear_lugar') }}">📍 Crear Lugar Frecuente</a></li>
+        </ul>
+    </nav>
     
     <h1>Panel de Administración</h1>
 
     <h2>Escaneo de Eventos (Staff)</h2>
-<form method="get" id="form-ir-a-evento" style="margin-bottom: 30px;">
-    <label for="selector-evento"><strong>Selecciona un evento:</strong></label><br>
-    <select id="selector-evento" style="padding: 8px; width: 300px;">
-        <option value="">-- Elegir evento --</option>
-        {% for evento in eventos %}
-            <option value="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
-                {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
-            </option>
-        {% endfor %}
-    </select>
-    <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
-</form>
+    <form method="get" id="form-ir-a-evento" style="margin-bottom: 30px;">
+        <label for="selector-evento"><strong>Selecciona un evento:</strong></label><br>
+        <select id="selector-evento" style="padding: 8px; width: 300px;">
+            <option value="">-- Elegir evento --</option>
+            {% for evento in eventos %}
+                <option value="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
+                    {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
+    </form>
 
-<script>
-document.getElementById("form-ir-a-evento").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const url = document.getElementById("selector-evento").value;
-    if (url) {
-        window.location.href = url;
-    } else {
-        alert("Selecciona un evento válido.");
-    }
-});
-</script>
-
-    <div id="mensaje"></div>
-
-    <input type="text" id="busqueda" placeholder="Buscar familia..." oninput="filtrarFamilias()">
-
-    <table id="tabla-familias">
+    <table id="tabla-familias" class="display">
         <thead>
             <tr>
                 <th>ID</th>
@@ -61,91 +48,132 @@ document.getElementById("form-ir-a-evento").addEventListener("submit", function(
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody></tbody>
-    </table>
-
-    <h2>Eventos con QR</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Nombre del Evento</th>
-                <th>Puntos</th>
-                <th>QR</th>
-            </tr>
-        </thead>
         <tbody>
-            {% for evento in eventos %}
+            {% for f in familias %}
             <tr>
-                <td>{{ evento.nombre_evento }}</td>
-                <td>{{ evento.puntos }}</td>
+                <td>{{ f.id }}</td>
+                <td>{{ f.nombre }}</td>
+                <td>{{ f.correo }}</td>
+                <td>{{ f.password }}</td>
+                <td>{{ f.puntos }}</td>
                 <td>
-                <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" target="_blank">
-                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" title="Haz clic para ampliar">
-                </a>
-                <br>
-                <a href="{{ url_for('descargar_qr_evento', filename=evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
-                </a>
-                <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
-                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
-                🗑 Eliminar
-        </button>
-    </form>
-</td>
+                    <a href="/familia/{{ f.id }}/ver">Ver</a> |
+                    <a href="/familia/{{ f.id }}/editar">✏️ Editar</a> |
+                    <button onclick="sumar({{ f.id }})">➕</button>
+                    <button onclick="canjear({{ f.id }})">➖</button>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
+    <h2>Eventos con QR</h2>
+    <h3>🆕 Último evento</h3>
+    {% if ultimo_evento %}
+        <div class="evento">
+            <p><strong>{{ ultimo_evento.nombre_evento }}</strong> — {{ ultimo_evento.puntos }} puntos</p>
+            <a href="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" target="_blank">
+                <img src="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" width="200" loading="lazy">
+            </a><br>
+            <a href="{{ url_for('descargar_qr_evento', filename=ultimo_evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
+            <form action="{{ url_for('eliminar_evento', evento_id=ultimo_evento.id) }}" method="post" style="display:inline;">
+                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
+                    🗑 Eliminar
+                </button>
+            </form>
+        </div>
+    {% else %}
+        <p>No hay eventos registrados aún.</p>
+    {% endif %}
+
+    <hr>
+
+    <button onclick="toggleEventos()">📂 Ver eventos anteriores</button>
+    <div id="eventos-anteriores" style="display: none; margin-top: 20px;">
+        {% for evento in otros_eventos %}
+        <div class="evento">
+            <p><strong>{{ evento.nombre_evento }}</strong> — {{ evento.puntos }} puntos</p>
+            <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" target="_blank">
+                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" loading="lazy">
+            </a><br>
+            <a href="{{ url_for('descargar_qr_evento', filename=evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
+            <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
+                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
+                    🗑 Eliminar
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- jQuery y DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
     <script>
+        document.getElementById("form-ir-a-evento").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const url = document.getElementById("selector-evento").value;
+            if (url) {
+                window.location.href = url;
+            } else {
+                alert("Selecciona un evento válido.");
+            }
+        });
+
+        $(document).ready(function () {
+            $('#tabla-familias').DataTable({
+                language: {
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
+                    paginate: {
+                        previous: "←",
+                        next: "→"
+                    },
+                    zeroRecords: "No se encontraron coincidencias",
+                },
+                pageLength: 10,
+                lengthMenu: [5, 10, 20, 50, 100]
+            });
+        });
+
+        function toggleEventos() {
+            const div = document.getElementById("eventos-anteriores");
+            const btn = event.target;
+            const visible = div.style.display === "block";
+            div.style.display = visible ? "none" : "block";
+            btn.textContent = visible ? "📂 Ver eventos anteriores" : "🔼 Ocultar eventos anteriores";
+        }
+
         function mostrarMensaje(texto, tipo = 'exito') {
-            const mensajeDiv = document.getElementById('mensaje');
+            let mensajeDiv = document.getElementById('mensaje');
+            if (!mensajeDiv) {
+                mensajeDiv = document.createElement('div');
+                mensajeDiv.id = 'mensaje';
+                document.body.insertBefore(mensajeDiv, document.body.firstChild);
+            }
+
             mensajeDiv.textContent = texto;
             mensajeDiv.style.display = 'block';
-            mensajeDiv.style.backgroundColor = tipo === 'error' ? '#f8d7da' : '#d4edda';
-            mensajeDiv.style.color = tipo === 'error' ? '#721c24' : '#155724';
-            mensajeDiv.style.border = tipo === 'error' ? '1px solid #f5c6cb' : '1px solid #c3e6cb';
+            mensajeDiv.style.padding = '12px';
+            mensajeDiv.style.margin = '12px';
+            mensajeDiv.style.borderRadius = '6px';
+            mensajeDiv.style.fontWeight = 'bold';
+
+            if (tipo === 'error') {
+                mensajeDiv.style.backgroundColor = '#f8d7da';
+                mensajeDiv.style.color = '#721c24';
+                mensajeDiv.style.border = '1px solid #f5c6cb';
+            } else {
+                mensajeDiv.style.backgroundColor = '#d4edda';
+                mensajeDiv.style.color = '#155724';
+                mensajeDiv.style.border = '1px solid #c3e6cb';
+            }
 
             setTimeout(() => {
                 mensajeDiv.style.display = 'none';
             }, 4000);
-        }
-
-        let familias = [];
-
-        async function cargarFamilias() {
-            const res = await fetch('/familias');
-            familias = await res.json();
-            mostrarFamilias(familias);
-        }
-
-        function mostrarFamilias(lista) {
-            const tbody = document.querySelector('#tabla-familias tbody');
-            tbody.innerHTML = '';
-            lista.forEach(f => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${f.id}</td>
-                        <td>${f.nombre}</td>
-                        <td>${f.correo}</td>
-                        <td>${f.password}</td>
-                        <td>${f.puntos}</td>
-                        <td>
-                            <a href="/familia/${f.id}/ver">Ver</a> |
-                            <button onclick="sumar(${f.id})">➕</button>
-                            <button onclick="canjear(${f.id})">➖</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function filtrarFamilias() {
-            const texto = document.getElementById('busqueda').value.toLowerCase();
-            const filtradas = familias.filter(f =>
-                f.nombre.toLowerCase().includes(texto) ||
-                f.correo.toLowerCase().includes(texto)
-            );
-            mostrarFamilias(filtradas);
         }
 
         function sumar(id) {
@@ -171,7 +199,7 @@ document.getElementById("form-ir-a-evento").addEventListener("submit", function(
                     mostrarMensaje(data.error, 'error');
                 } else {
                     mostrarMensaje(data.mensaje, 'exito');
-                    cargarFamilias();
+                    location.reload();
                 }
             });
         }
@@ -199,12 +227,30 @@ document.getElementById("form-ir-a-evento").addEventListener("submit", function(
                     mostrarMensaje(data.error, 'error');
                 } else {
                     mostrarMensaje(data.mensaje, 'exito');
-                    cargarFamilias();
+                    location.reload();
                 }
             });
         }
-
-        cargarFamilias();
     </script>
+    <script>
+let timeout;
+
+// Función que redirige al logout tras 5 minutos de inactividad
+function iniciarTemporizadorInactividad() {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        alert("Tu sesión ha expirado por inactividad.");
+        window.location.href = "{{ url_for('logout') }}";
+    }, 5 * 60 * 1000); // 5 minutos
+}
+
+// Reinicia el temporizador con cualquier actividad del usuario
+['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(event => {
+    document.addEventListener(event, iniciarTemporizadorInactividad);
+});
+
+iniciarTemporizadorInactividad();
+</script>
+
 </body>
 </html>

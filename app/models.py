@@ -75,8 +75,15 @@ class EventoQR(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre_evento = db.Column(db.String(100), nullable=False)
     puntos = db.Column(db.Integer, nullable=False)
-    qr_filename = db.Column(db.String(200), nullable=False)
+    qr_filename = db.Column(db.String(200), nullable=True)  # ← CAMBIAR a True
     latitud = db.Column(db.Float)  # ← Nuevo campo
     longitud = db.Column(db.Float)  # ← Nuevo campo
     
-    
+class LugarFrecuente(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False, unique=True)
+    latitud = db.Column(db.String(50), nullable=False)
+    longitud = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return f'<Lugar {self.nombre}>'  

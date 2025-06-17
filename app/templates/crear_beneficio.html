@@ -26,6 +26,36 @@
         <button type="submit">Crear beneficio</button>
     </form>
 
+    <h2>Beneficios creados</h2>
+    {% if beneficios %}
+    <table class="transactions">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Puntos necesarios</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for beneficio in beneficios %}
+        <tr>
+            <td>{{ beneficio.nombre }}</td>
+            <td>{{ beneficio.puntos_requeridos }}</td>
+            <td style="white-space: nowrap; vertical-align: middle;">
+            <a href="{{ url_for('editar_beneficio', beneficio_id=beneficio.id) }}" class="btn-action">Editar</a>
+            <form action="{{ url_for('eliminar_beneficio', beneficio_id=beneficio.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este beneficio?');">
+                <button type="submit" class="btn-delete">Eliminar</button>
+            </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+    {% else %}
+    <p><em>No hay beneficios creados aún.</em></p>
+    {% endif %}
+
     <p><a href="{{ url_for('panel_admin') }}">← Volver al panel de administración</a></p>
 </body>
 </html>

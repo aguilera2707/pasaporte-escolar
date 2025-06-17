@@ -5,115 +5,132 @@
     <title>Perfil de Familia</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
-
-
 <body>
-    <form action="{{ url_for('generar_qr_staff', familia_id=familia.id) }}" method="POST">
-    </form>
-    <h1>Familia: {{ familia.nombre }}</h1>
-    <p>Puntos actuales: {{ familia.puntos }}</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="mensajes-flash">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
 
-    <h2>Historial de transacciones</h2>
-        <p>
-    <a href="{{ url_for('exportar_transacciones', familia_id=familia.id) }}">
+    <h1>Familia: {{ familia.nombre }}</h1>
+    <p>Puntos actuales: <strong>{{ familia.puntos }}</strong></p>
+
+    <!-- Código QR centrado -->
+    <div class="qr-container">
+        <h3>Código QR:</h3>
+        <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="QR de la familia">
+        <form action="{{ url_for('generar_o_regenerar_qr', familia_id=familia.id) }}" method="POST" style="margin-top: 1em;">
+            <button type="submit" class="btn-export">Generar/Actualizar código QR</button>
+        </form>
+    </div>
+
+    <!-- Botón Exportar historial -->
+    <a href="{{ url_for('exportar_transacciones', familia_id=familia.id) }}" class="btn-export">
         📥 Exportar historial a Excel (CSV)
     </a>
-    </p>
-    <form action="{{ url_for('generar_o_regenerar_qr', familia_id=familia.id) }}" method="POST" style="margin-top: 1em;">
-    <button type="submit">Generar/Actualizar código QR</button>
-</form>
+
+    <!-- Filtrar historial -->
     <h2>Filtrar historial</h2>
-<form method="GET">
-    <label for="tipo">Tipo de transacción:</label>
-    <select name="tipo" id="tipo">
-        <option value="">-- Todos --</option>
-        <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Acreditación</option>
-        <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
-    </select>
+    <form method="GET" class="filter-form">
+        <label for="tipo">Tipo de transacción:</label>
+        <select name="tipo" id="tipo">
+            <option value="">-- Todos --</option>
+            <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Acreditación</option>
+            <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
+        </select>
 
-    <label for="fecha_inicio">Desde:</label>
-    <input type="date" name="fecha_inicio" value="{{ request.args.get('fecha_inicio', '') }}">
+        <label for="fecha_inicio">Desde:</label>
+        <input type="date" name="fecha_inicio" value="{{ request.args.get('fecha_inicio', '') }}">
 
-    <label for="fecha_fin">Hasta:</label>
-    <input type="date" name="fecha_fin" value="{{ request.args.get('fecha_fin', '') }}">
+        <label for="fecha_fin">Hasta:</label>
+        <input type="date" name="fecha_fin" value="{{ request.args.get('fecha_fin', '') }}">
 
-    <button type="submit">Filtrar</button>
-</form>
-{% if transacciones %}
-<table border="1">
-    <tr>
-        <th>Fecha</th>
-        <th>Tipo</th>
-        <th>Puntos</th>
-        <th>Descripción</th>
-    </tr>
-    {% for transaccion in transacciones %}
-    <tr>
-        <td>{{ transaccion.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>
-            {% if transaccion.tipo == 'suma' %}
-                Acreditación
-            {% elif transaccion.tipo == 'canje' %}
-                Canje
-            {% else %}
-                {{ transaccion.tipo }}
-            {% endif %}
-        </td>
-        <td>{{ transaccion.puntos }}</td>
-        <td>{{ transaccion.descripcion or 'Sin descripción' }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-    <p><em>No hay transacciones que coincidan con los filtros seleccionados.</em></p>
-{% endif %}
+        <button type="submit">Filtrar</button>
+    </form>
+
+    <h2>Historial de transacciones</h2>
+    {% if transacciones %}
+    <table class="transactions">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Puntos</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for transaccion in transacciones %}
+            <tr>
+                <td>{{ transaccion.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if transaccion.tipo == 'suma' %}
+                        Acreditación
+                    {% elif transaccion.tipo == 'canje' %}
+                        Canje
+                    {% else %}
+                        {{ transaccion.tipo }}
+                    {% endif %}
+                </td>
+                <td>{{ transaccion.puntos }}</td>
+                <td>{{ transaccion.descripcion or 'Sin descripción' }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p><em>No hay transacciones que coincidan con los filtros seleccionados.</em></p>
+    {% endif %}
+
+    <!-- Registrar nueva transacción -->
     <h2>Registrar transacción</h2>
-<form id="transaccionForm">
-    <select name="tipo" required>
-        <option value="suma">Suma</option>
-        <option value="canje">Canje</option>
-    </select>
-    <input type="number" name="puntos" required min="1" placeholder="Cantidad de puntos">
-    <input type="text" name="descripcion" placeholder="Descripción">
-    <button type="submit">Registrar</button>
-</form>
+    <form id="transaccionForm" class="transaction-form">
+        <label for="tipo_reg">Tipo:</label>
+        <select name="tipo" id="tipo_reg" required>
+            <option value="suma">Suma</option>
+            <option value="canje">Canje</option>
+        </select>
+        <input type="number" name="puntos" required min="1" placeholder="Cantidad de puntos">
+        <input type="text" name="descripcion" placeholder="Descripción">
+        <button type="submit">Registrar</button>
+    </form>
+    <div id="mensaje-transaccion"></div>
 
-<div id="mensaje-transaccion" style="margin-top:10px; font-weight:bold;"></div>
+    <a href="{{ url_for('lista_familias') }}" class="back-link">← Volver al listado de familias</a>
 
-<p><a href="{{ url_for('lista_familias') }}">← Volver al listado de familias</a></p>
+    <script>
+    document.getElementById("transaccionForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {
+            tipo: formData.get("tipo"),
+            puntos: formData.get("puntos"),
+            descripcion: formData.get("descripcion")
+        };
 
-<h3>Código QR:</h3>
-<img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="QR de la familia">
-
-<script>
-document.getElementById("transaccionForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = {
-        tipo: formData.get("tipo"),
-        puntos: formData.get("puntos"),
-        descripcion: formData.get("descripcion")
-    };
-
-    fetch(`/familia/{{ familia.id }}/transaccion`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-    })
-    .then(resp => resp.json())
-    .then(resp => {
-        const div = document.getElementById("mensaje-transaccion");
-        div.innerText = resp.mensaje || resp.error;
-        div.style.color = resp.mensaje ? "green" : "red";
-        setTimeout(() => { div.innerText = ""; }, 4000);
-        if (resp.mensaje) location.reload();  // recarga si fue exitoso
-    })
-    .catch(err => {
-        console.error("Error:", err);
+        fetch(`/familia/{{ familia.id }}/transaccion`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(resp => resp.json())
+        .then(resp => {
+            const div = document.getElementById("mensaje-transaccion");
+            div.innerText = resp.mensaje || resp.error;
+            div.style.color = resp.mensaje ? "green" : "red";
+            setTimeout(() => { div.innerText = ""; }, 4000);
+            if (resp.mensaje) location.reload();  // recarga si fue exitoso
+        })
+        .catch(err => {
+            console.error("Error:", err);
+        });
     });
-});
-</script>
+    </script>
 </body>
 </html>

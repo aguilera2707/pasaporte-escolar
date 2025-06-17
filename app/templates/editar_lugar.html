@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Lugar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <a href="{{ url_for('crear_lugar') }}" class="btn-primary">← Volver a Lugares</a>
+
+    <h1>Editar Lugar Frecuente</h1>
+
+    <form method="POST">
+        <input type="text" name="nombre" value="{{ lugar.nombre }}" required>
+        <input type="text" name="latitud" value="{{ lugar.latitud }}" required>
+        <input type="text" name="longitud" value="{{ lugar.longitud }}" required>
+        <button type="submit" class="btn-primary">Guardar cambios</button>
+    </form>
+</body>
+</html>
