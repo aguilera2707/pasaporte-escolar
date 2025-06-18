@@ -79,6 +79,15 @@ def login():
             session["rol"] = admin.rol
             session["nombre_usuario"] = admin.usuario  # <-- Guardamos el nombre del admin aquí
             print(f"[DEBUG] Login exitoso: {admin.usuario} con rol {admin.rol}")
+            entry = LogEntry(
+                user=admin.usuario,
+                role=admin.rol,
+                action="inicio sesión",
+                entity="Admin",
+                details="Inicio de sesión exitoso"
+            )
+            db.session.add(entry)
+            db.session.commit()
             return redirect(url_for("panel_admin"))
         else:
             flash("Credenciales inválidas para administrador", "error")
@@ -89,13 +98,22 @@ def login():
     return render_template("login_unificado.html", active_tab="admin")
 
 
-
-
-
-@app.route('/logout')
+@app.route("/logout")
 def logout():
+    nombre = session.get("nombre_usuario", "<desconocido>")
+    rol = session.get("rol", "Admin")
     session.clear()
-    return redirect(url_for('login'))
+    # --- Log de cierre de sesión ---
+    entry = LogEntry(
+        user=nombre,
+        role=rol,
+        action="cierre sesión",
+        entity="Admin",
+        details="El usuario cerró sesión"
+    )
+    db.session.add(entry)
+    db.session.commit()
+    return redirect(url_for("login"))
 
 
 def quitar_acentos(cadena):
@@ -1546,16 +1564,16 @@ def lista_familias_eliminar():
 from flask import request, render_template
 from app.models import LogEntry
 from app import db
-
-# … tu decorator de login y admin_required …
+from datetime import datetime, timedelta
+import pytz
 
 @app.route("/admin/log")
 @login_requerido_admin
 def log():
     # Parámetros de filtro opcionales
-    usuario = request.args.get("usuario", "")
-    accion  = request.args.get("accion", "")
-    entidad = request.args.get("entidad", "")
+    usuario     = request.args.get("usuario", "")
+    accion      = request.args.get("accion", "")
+    entidad     = request.args.get("entidad", "")
     fecha_desde = request.args.get("desde", "")
     fecha_hasta = request.args.get("hasta", "")
 
@@ -1568,14 +1586,19 @@ def log():
     if entidad:
         q = q.filter(LogEntry.entity == entidad)
 
-    # filtro de fechas
-    from datetime import datetime, timedelta
+    # filtro de fechas (en UTC)
     if fecha_desde:
         dt = datetime.strptime(fecha_desde, "%Y-%m-%d")
         q = q.filter(LogEntry.timestamp >= dt)
     if fecha_hasta:
-        dt = datetime.strptime(fecha_hasta, "%Y-%m-%d") + timedelta(hours=23,minutes=59,seconds=59)
+        dt = datetime.strptime(fecha_hasta, "%Y-%m-%d") + timedelta(hours=23, minutes=59, seconds=59)
         q = q.filter(LogEntry.timestamp <= dt)
 
     entries = q.order_by(LogEntry.timestamp.desc()).all()
+
+    # convertir cada timestamp de UTC a hora local (ej. America/Mexico_City)
+    local_tz = pytz.timezone("America/Mexico_City")
+    for e in entries:
+        e.local_ts = e.timestamp.replace(tzinfo=pytz.utc).astimezone(local_tz)
+
     return render_template("log.html", entries=entries)

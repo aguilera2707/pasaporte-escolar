@@ -13,20 +13,21 @@ class Familia(db.Model):
     puntos = db.Column(db.Integer, default=0)
 
     def __repr__(self):
-        return f'<Familia {self.nombre} - {self.puntos} puntos>'
+        return f'<Familia {self.nombre} – {self.puntos} puntos>'
 
 
 class MovimientoPuntos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
     cambio = db.Column(db.Integer, nullable=False)  # Positivo para sumar, negativo para restar
-    motivo = db.Column(db.String(200))  # Ej: "Llegó tarde", "Asistió a evento"
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc))
+    motivo = db.Column(db.String(200))              # Ej: "Llegó tarde", "Asistió a evento"
+    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
 
     familia = db.relationship('Familia', backref=db.backref('movimientos', lazy=True))
 
     def __repr__(self):
-        return f'<Movimiento {self.cambio} puntos - {self.motivo}>'
+        signo = '+' if self.cambio >= 0 else ''
+        return f'<Movimiento {signo}{self.cambio} – {self.motivo}>'
 
 
 class Transaccion(db.Model):
@@ -35,12 +36,12 @@ class Transaccion(db.Model):
     tipo = db.Column(db.String(10), nullable=False)  # "suma" o "canje"
     puntos = db.Column(db.Integer, nullable=False)
     descripcion = db.Column(db.String(200))
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc))
+    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
 
     familia = db.relationship('Familia', backref=db.backref('transacciones', lazy=True))
 
     def __repr__(self):
-        return f'<Transacción {self.tipo} - {self.puntos} puntos>'
+        return f'<Transacción {self.tipo} – {self.puntos}>'
 
 
 class Admin(db.Model):
@@ -51,7 +52,7 @@ class Admin(db.Model):
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def verificar_password(self, password):
         return check_password_hash(self.password_hash, password)
 
@@ -61,28 +62,12 @@ class Admin(db.Model):
     def es_admin(self):
         return self.rol == 'admin'
 
-
-class EventoQRRegistro(db.Model):
-    __tablename__ = 'evento_qr_registro'
-    id = db.Column(db.Integer, primary_key=True)
-    familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
-    evento_id = db.Column(db.Integer, db.ForeignKey('evento_qr.id'), nullable=False)
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc))
-
-    familia = db.relationship('Familia', backref='eventos_escaneados')
-    evento = db.relationship('EventoQR', backref='registros')
-
-
-class Beneficio(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    puntos_requeridos = db.Column(db.Integer, nullable=False)
+    def __repr__(self):
+        return f'<Admin {self.usuario} ({self.rol})>'
 
 
 class EventoQR(db.Model):
     __tablename__ = 'evento_qr'
-    __table_args__ = {'extend_existing': True}
-
     id = db.Column(db.Integer, primary_key=True)
     nombre_evento = db.Column(db.String(100), nullable=False)
     puntos = db.Column(db.Integer, nullable=False)
@@ -90,28 +75,53 @@ class EventoQR(db.Model):
     latitud = db.Column(db.Float)
     longitud = db.Column(db.Float)
 
+    def __repr__(self):
+        return f'<EventoQR {self.nombre_evento} – {self.puntos} puntos>'
+
+
+class EventoQRRegistro(db.Model):
+    __tablename__ = 'evento_qr_registro'
+    id = db.Column(db.Integer, primary_key=True)
+    familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
+    evento_id = db.Column(db.Integer, db.ForeignKey('evento_qr.id'), nullable=False)
+    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
+
+    familia = db.relationship('Familia', backref='eventos_escaneados')
+    evento = db.relationship('EventoQR', backref='registros')
+
+    def __repr__(self):
+        return f'<Registro Evento {self.evento_id} – Familia {self.familia_id}>'
+
+
+class Beneficio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    puntos_requeridos = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f'<Beneficio {self.nombre} – {self.puntos_requeridos}>'
+
 
 class LugarFrecuente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False, unique=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
     latitud = db.Column(db.String(50), nullable=False)
     longitud = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
         return f'<Lugar {self.nombre}>'
 
-from datetime import datetime
-from app import db
 
 class LogEntry(db.Model):
-    __tablename__ = "log_entries"
+    __tablename__ = 'log_entries'
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     user = db.Column(db.String(64), nullable=False)
     role = db.Column(db.String(32), nullable=False)
-    action = db.Column(db.String(32), nullable=False)    # e.g. 'crear', 'editar', 'eliminar'
-    entity = db.Column(db.String(32), nullable=False)    # e.g. 'Familia', 'Evento'
-    details = db.Column(db.Text, nullable=True)          # JSON o texto libre
+    action = db.Column(db.String(32), nullable=False)   # e.g. 'crear', 'editar', 'eliminar', 'login'
+    entity = db.Column(db.String(32), nullable=False)   # e.g. 'Familia', 'EventoQR', 'Admin'
+    details = db.Column(db.Text, nullable=True)         # Descripción detallada
 
     def __repr__(self):
-        return f"<Log {self.timestamp} {self.user} {self.action} {self.entity}>"
+        ts = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        return f'<Log {ts} | {self.user} [{self.role}] {self.action} {self.entity}>'
