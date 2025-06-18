@@ -100,3 +100,18 @@ class LugarFrecuente(db.Model):
     def __repr__(self):
         return f'<Lugar {self.nombre}>'
 
+from datetime import datetime
+from app import db
+
+class LogEntry(db.Model):
+    __tablename__ = "log_entries"
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    user = db.Column(db.String(64), nullable=False)
+    role = db.Column(db.String(32), nullable=False)
+    action = db.Column(db.String(32), nullable=False)    # e.g. 'crear', 'editar', 'eliminar'
+    entity = db.Column(db.String(32), nullable=False)    # e.g. 'Familia', 'Evento'
+    details = db.Column(db.Text, nullable=True)          # JSON o texto libre
+
+    def __repr__(self):
+        return f"<Log {self.timestamp} {self.user} {self.action} {self.entity}>"

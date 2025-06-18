@@ -1540,9 +1540,42 @@ def lista_familias_eliminar():
     return render_template('lista_familias_eliminar.html', familias=familias)
 
 
-@app.route('/log')
+
+#LOG__________________________________________________
+
+from flask import request, render_template
+from app.models import LogEntry
+from app import db
+
+# … tu decorator de login y admin_required …
+
+@app.route("/admin/log")
 @login_requerido_admin
 def log():
-    # aquí obtienes tus registros
-    registros = Registro.query.order_by(Registro.fecha.desc()).all()
-    return render_template('log.html', registros=registros)
+    # Parámetros de filtro opcionales
+    usuario = request.args.get("usuario", "")
+    accion  = request.args.get("accion", "")
+    entidad = request.args.get("entidad", "")
+    fecha_desde = request.args.get("desde", "")
+    fecha_hasta = request.args.get("hasta", "")
+
+    q = LogEntry.query
+
+    if usuario:
+        q = q.filter(LogEntry.user.ilike(f"%{usuario}%"))
+    if accion:
+        q = q.filter(LogEntry.action == accion)
+    if entidad:
+        q = q.filter(LogEntry.entity == entidad)
+
+    # filtro de fechas
+    from datetime import datetime, timedelta
+    if fecha_desde:
+        dt = datetime.strptime(fecha_desde, "%Y-%m-%d")
+        q = q.filter(LogEntry.timestamp >= dt)
+    if fecha_hasta:
+        dt = datetime.strptime(fecha_hasta, "%Y-%m-%d") + timedelta(hours=23,minutes=59,seconds=59)
+        q = q.filter(LogEntry.timestamp <= dt)
+
+    entries = q.order_by(LogEntry.timestamp.desc()).all()
+    return render_template("log.html", entries=entries)
