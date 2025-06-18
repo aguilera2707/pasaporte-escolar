@@ -17,7 +17,6 @@ from app.models import (
     EventoQR, EventoQRRegistro
 )
 
-
 def login_requerido_admin(f):
     @wraps(f)
     def decorada(*args, **kwargs):
@@ -27,12 +26,16 @@ def login_requerido_admin(f):
     return decorada
 
 @app.route("/admin")
+@login_requerido_admin
 def panel_admin():
+    rol = session.get('rol')
+    print(f"[DEBUG] Rol en sesión: {rol}")
+
     if "admin_id" not in session:
         return redirect(url_for("login"))
 
     eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()
-    familias = Familia.query.all()  # ← ESTO ES CLAVE
+    familias = Familia.query.all()
     ultimo_evento = eventos[0] if eventos else None
     otros_eventos = eventos[1:] if len(eventos) > 1 else []
 
@@ -41,9 +44,26 @@ def panel_admin():
         eventos=eventos,
         familias=familias,
         ultimo_evento=ultimo_evento,
-        otros_eventos=otros_eventos
+        otros_eventos=otros_eventos,
+        rol=rol  # IMPORTANTE: pasar el rol
     )
 
+from flask import session, redirect, url_for, flash
+
+# Decorador para roles
+def requiere_rol(*roles_permitidos):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if 'admin_id' not in session:
+                return redirect(url_for('login'))
+            rol = session.get('rol')
+            if rol not in roles_permitidos:
+                flash("No tienes permiso para acceder a esta sección", "error")
+                return redirect(url_for('panel_admin'))
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -55,18 +75,27 @@ def login():
         admin = Admin.query.filter_by(usuario=usuario).first()
         if admin and admin.verificar_password(password):
             session["admin_id"] = admin.id
+            session["admin"] = admin.usuario
+            session["rol"] = admin.rol
+            session["nombre_usuario"] = admin.usuario  # <-- Guardamos el nombre del admin aquí
+            print(f"[DEBUG] Login exitoso: {admin.usuario} con rol {admin.rol}")
             return redirect(url_for("panel_admin"))
         else:
             flash("Credenciales inválidas para administrador", "error")
+            print("[DEBUG] Login fallido o usuario no encontrado")
             return render_template("login_unificado.html", active_tab="admin")
+
+    # Método GET
     return render_template("login_unificado.html", active_tab="admin")
+
+
 
 
 
 @app.route('/logout')
 def logout():
-    session.pop('admin', None)
-    return render_template('login_unificado.html')
+    session.clear()
+    return redirect(url_for('login'))
 
 
 def quitar_acentos(cadena):
@@ -190,6 +219,7 @@ def sumar_puntos():
     return jsonify({"mensaje": "Puntos sumados correctamente", "puntos_actuales": familia.puntos})
 
 @app.route("/restar_puntos", methods=["POST"])
+@requiere_rol('admin', 'supervisor')
 def restar_puntos():
     data = request.get_json()
     familia_id = data.get("familia_id")
@@ -271,44 +301,38 @@ def canjear_puntos(familia_id):
 def registrar_transaccion():
     data = request.get_json()
     familia_id = data.get('familia_id')
-    puntos = data.get('puntos')
+    puntos = int(data.get('puntos'))
     tipo = data.get('tipo')
-    descripcion = data.get('descripcion')
+    descripcion = data.get('descripcion', '')
 
-    # Obtener la familia
     familia = Familia.query.get(familia_id)
     if not familia:
         return jsonify({'error': 'Familia no encontrada'}), 404
 
-    # Validar tipo
-    if tipo not in ['suma', 'canje']:
-        return jsonify({'error': 'Tipo inválido. Usa "suma" o "canje"'}), 400
+    if tipo == 'suma':
+        familia.puntos += puntos
+    elif tipo == 'canje':
+        if familia.puntos < puntos:
+            return jsonify({'error': 'Puntos insuficientes para canjear'}), 400
+        familia.puntos -= puntos
+    else:
+        return jsonify({'error': 'Tipo de transacción inválido'}), 400
 
-    # Validar puntos para canje
-    if tipo == 'canje' and familia.puntos < puntos:
-        return jsonify({'error': 'Puntos insuficientes'}), 400
-
-    # Crear y guardar la transacción
+    # Crear registro de la transacción
     transaccion = Transaccion(
         familia_id=familia_id,
-        tipo=tipo,
         puntos=puntos,
-        descripcion=descripcion
+        tipo=tipo,
+        descripcion=descripcion,
+        fecha=datetime.utcnow()
     )
     db.session.add(transaccion)
-
-    # Actualizar puntos de la familia
-    if tipo == "suma":
-        familia.puntos += puntos
-    elif tipo == "canje":
-        familia.puntos -= puntos
-
     db.session.commit()
 
-    return jsonify({
-        'mensaje': 'Transacción registrada correctamente',
-        'puntos_actuales': familia.puntos
-    }), 200
+    return jsonify({'mensaje': 'Transacción registrada exitosamente'})
+
+
+
     
 @app.route('/familia/<int:familia_id>/historial', methods=['GET'])
 def historial_transacciones(familia_id):
@@ -380,11 +404,12 @@ def ver_familia(familia_id):
         except ValueError:
             pass
 
-    # Ejecutar consulta y ordenar por fecha descendente
     transacciones = query.order_by(Transaccion.fecha.desc()).all()
 
-    return render_template('familia.html', familia=familia, transacciones=transacciones)
+    # PASAR EL ROL ACTUAL A LA PLANTILLA
+    rol_actual = session.get('rol', None)
 
+    return render_template('familia.html', familia=familia, transacciones=transacciones, rol=rol_actual)
 
 
 @app.route('/familia/<int:familia_id>/transaccion', methods=['POST'])
@@ -470,8 +495,9 @@ def crear_admin():
     if request.method == 'POST':
         usuario = request.form.get('usuario')
         password = request.form.get('password')
+        rol = request.form.get('rol')  # nuevo campo rol
 
-        if not usuario or not password:
+        if not usuario or not password or not rol:
             flash("Todos los campos son obligatorios", "error")
             return render_template("crear_admin.html")
 
@@ -479,41 +505,51 @@ def crear_admin():
             flash("Ese usuario ya existe", "error")
             return render_template("crear_admin.html")
 
-        nuevo_admin = Admin(usuario=usuario)
+        nuevo_admin = Admin(usuario=usuario, rol=rol)
         nuevo_admin.set_password(password)
         db.session.add(nuevo_admin)
         db.session.commit()
 
-        flash("Administrador creado correctamente", "exito")
+        flash("Administrador creado correctamente", "success")
         return redirect(url_for('crear_admin'))
 
     return render_template("crear_admin.html")
 
+
 @app.route('/admin/usuarios')
+@requiere_rol('admin')
 def lista_administradores():
     if 'admin_id' not in session:
-        return redirect(url_for('login'))
-    
+        return redirect(url_for('login'))   
     administradores = Admin.query.all()
     return render_template('lista_administradores.html', administradores=administradores) 
 
 @app.route('/admin/usuarios/eliminar/<int:admin_id>', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_administrador(admin_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
 
     admin = Admin.query.get(admin_id)
+    print("Intentando eliminar:", admin.usuario if admin else None)
+    print("Logueado como:", session.get('admin'))
 
+    # Validación 1: El usuario 'admin' no se puede eliminar nunca
     if not admin:
         flash("Administrador no encontrado", "error")
-    elif admin.usuario == session['admin']:
-        flash("No puedes eliminar tu propia cuenta", "error")
+    elif admin.usuario.lower() == 'admin':
+        flash("El usuario principal 'admin' no puede ser eliminado.", "error")
+    # Validación 2: El admin logueado no puede eliminarse a sí mismo
+    elif admin.usuario == session.get('admin'):
+        flash("No puedes eliminar el usuario con el que estás logueado.", "error")
     else:
         db.session.delete(admin)
         db.session.commit()
         flash("Administrador eliminado exitosamente", "success")
 
-    return redirect(url_for('lista_administradores'))  
+    return redirect(url_for('lista_administradores'))
+
+
 
 @app.route('/escanear')
 def escanear_qr():
@@ -568,14 +604,17 @@ def perfil_familia(familia_id):
     transacciones = Transaccion.query.filter_by(familia_id=familia_id).order_by(Transaccion.fecha.desc()).all()
     beneficios = Beneficio.query.all()
     ultimo_evento = EventoQR.query.order_by(EventoQR.id.desc()).first()  # 🔹 nuevo
+    rol = session.get('rol')  # <--- obtener rol de sesión
 
     return render_template(
         'perfil_familia.html',
         familia=familia,
         transacciones=transacciones,
         beneficios=beneficios,
-        ultimo_evento=ultimo_evento  # 🔹 nuevo
+        ultimo_evento=ultimo_evento,
+        rol=rol  # <--- pasar rol al template
     )
+
 
 
 
@@ -654,6 +693,7 @@ def escanear_evento_qr(evento_id):
 
 
 @app.route('/admin/crear_beneficio', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def crear_beneficio():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -707,6 +747,7 @@ def escanear_qr_familia_en_evento(evento_id, familia_id):
 
 
 @app.route('/staff/escanear/<int:familia_id>', methods=['GET', 'POST'])
+@requiere_rol('admin', 'supervisor')
 def escanear_familia_staff(familia_id):
     if 'admin' not in session:
         return redirect(url_for('login'))
@@ -897,6 +938,7 @@ def registrar_asistencia_evento():
 from app.models import LugarFrecuente  # asegúrate de importarlo
 
 @app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def crear_qr_evento():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1003,6 +1045,7 @@ def ubicacion_invalida(evento_id):
     return render_template('ubicacion_invalida.html', evento=evento)
 
 @app.route('/admin/eliminar_evento/<int:evento_id>', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_evento(evento_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1114,9 +1157,12 @@ def editar_familia(familia_id):
 
         db.session.commit()
         flash('Familia actualizada correctamente', 'success')
-        return redirect(url_for('panel_admin'))
+        # En vez de redirect, renderizas la misma plantilla con familia actualizada
+        return render_template('editar_familia.html', familia=familia)
 
     return render_template('editar_familia.html', familia=familia)
+
+
 
 
 @app.route('/admin/crear_lugar', methods=['GET', 'POST'])
@@ -1195,6 +1241,7 @@ def eliminar_eventos():
     return redirect(url_for('crear_qr_evento'))
 
 @app.route('/admin/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def editar_evento(evento_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1243,6 +1290,7 @@ def editar_beneficio(beneficio_id):
     return render_template('editar_beneficio.html', beneficio=beneficio)
 
 @app.route('/admin/eliminar_beneficio/<int:beneficio_id>', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_beneficio(beneficio_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1252,3 +1300,132 @@ def eliminar_beneficio(beneficio_id):
     db.session.commit()
     flash("Beneficio eliminado exitosamente", "success")
     return redirect(url_for('crear_beneficio'))
+
+from flask import send_file
+import csv
+from io import BytesIO, TextIOWrapper
+
+# Vista para mostrar historial de escaneos de un evento
+@app.route('/admin/evento/<int:evento_id>/historial')
+def historial_escaneos_evento(evento_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    evento = EventoQR.query.get_or_404(evento_id)
+    registros = EventoQRRegistro.query.filter_by(evento_id=evento_id).order_by(EventoQRRegistro.id.desc()).all()
+    # Cargar familia con .familia gracias a la relación
+    return render_template('historial_escaneos_evento.html', evento=evento, registros=registros)
+
+@app.route('/admin/evento/<int:evento_id>/exportar')
+def exportar_historial_escaneos_evento(evento_id):
+    evento = EventoQR.query.get_or_404(evento_id)
+    registros = EventoQRRegistro.query.filter_by(evento_id=evento_id).order_by(EventoQRRegistro.fecha.desc()).all()
+
+    buffer = BytesIO()
+    # Envolvemos el buffer para escribir texto
+    wrapper = TextIOWrapper(buffer, encoding='utf-8-sig', newline='', write_through=True)
+    writer = csv.writer(wrapper)
+
+    writer.writerow(['ID Familia', 'Nombre Familia', 'Fecha de escaneo'])
+
+    for r in registros:
+        nombre_familia = r.familia.nombre if r.familia else "-"
+        fecha_local = (r.fecha - timedelta(hours=6)).strftime('%Y-%m-%d %H:%M')
+        writer.writerow([r.familia_id, nombre_familia, fecha_local])
+
+    # No cerramos wrapper, solo hacemos flush
+    wrapper.flush()
+    buffer.seek(0)  # Volvemos al inicio para leer todo el contenido
+
+    return Response(
+        buffer.read(),
+        mimetype='text/csv',
+        headers={
+            "Content-Disposition": f"attachment; filename=historial_escaneos_evento_{evento.id}.csv"
+        }
+    )
+
+
+#GENERACION DE PDF CON QR
+
+from io import BytesIO
+from flask import make_response
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+import qrcode
+import os
+
+@app.route('/familia/<int:familia_id>/descargar_pdf_qr')
+def descargar_pdf_qr_familia(familia_id):
+    familia = Familia.query.get_or_404(familia_id)
+
+    # Generar URL que irá en el QR
+    url = url_for('ver_familia', familia_id=familia.id, _external=True)
+
+    # Crear QR
+    qr_img = qrcode.make(url)
+    qr_bytes = BytesIO()
+    qr_img.save(qr_bytes)
+    qr_bytes.seek(0)
+
+    # Crear PDF en memoria
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+
+    # Título: Nombre de la familia
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(4.25 * inch, 10 * inch, f"QR de la familia: {familia.nombre}")
+
+    # Insertar QR en PDF
+    qr_temp_path = os.path.join('app', 'static', f'temp_qr_{familia.id}.png')
+    qr_img.save(qr_temp_path)
+    c.drawImage(qr_temp_path, 2.5 * inch, 6 * inch, width=3*inch, height=3*inch)
+
+    # Finalizar PDF
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    # Eliminar archivo temporal QR
+    os.remove(qr_temp_path)
+
+    # Preparar respuesta con PDF
+    response = make_response(buffer.getvalue())
+    response.headers.set('Content-Type', 'application/pdf')
+    response.headers.set('Content-Disposition', 'attachment', filename=f'qr_familia_{familia.id}.pdf')
+
+    return response
+
+from app.models import EventoQR  # Asegúrate de importar tu modelo
+
+@app.route('/evento/<int:evento_id>/descargar_pdf_qr')
+def descargar_pdf_qr_evento(evento_id):
+    evento = EventoQR.query.get(evento_id)
+    if not evento:
+        abort(404, description="Evento no encontrado")
+
+    # Ruta completa del QR guardado en static
+    qr_path = os.path.join('app', 'static', 'qr_eventos', evento.qr_filename)
+
+    if not os.path.exists(qr_path):
+        abort(404, description="QR no encontrado")
+
+    # Crear PDF en memoria
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Título
+    c.setFont("Helvetica-Bold", 20)
+    c.drawCentredString(width / 2, height - 100, evento.nombre_evento)
+
+    # Insertar imagen QR (centrada)
+    qr_size = 200
+    c.drawImage(qr_path, (width - qr_size) / 2, height - 350, qr_size, qr_size)
+
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"{evento.nombre_evento}_QR.pdf", mimetype='application/pdf')

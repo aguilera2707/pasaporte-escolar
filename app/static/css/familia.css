@@ -240,4 +240,15 @@ em {
         max-width: 180px;
     }
 }
+.tipo-fijo {
+    display: inline-block;
+    padding: 0.4em 0.8em;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #555;
+    vertical-align: middle;
+    margin-left: 0.5em;
+}
 

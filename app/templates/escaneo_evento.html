@@ -1,45 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Escaneo de QR - {{ evento.nombre_evento }}</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/escanear.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/escaneo_evento.css') }}" />
 </head>
-
-
 <body>
-    <h1>Escanear QR de Familias para el evento: {{ evento.nombre_evento }}</h1>
-    <p>ID del evento: {{ evento.id }}</p>
-    <div id="qr-reader" style="width: 300px;"></div>
-    <div id="resultado" style="margin-top: 20px; font-weight: bold;"></div>
+    <div class="container">
+        <h1>Escanear QR de Familias para el evento: <span class="evento-nombre">{{ evento.nombre_evento }}</span></h1>
+        <p class="evento-id">ID del evento: {{ evento.id }}</p>
+
+        <div id="qr-reader" class="qr-reader"></div>
+
+        <div id="mensaje-escaneo"></div>
+
+        <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+    </div>
 
     <script>
         function onScanSuccess(decodedText, decodedResult) {
-            // Desactiva el escáner tras primer éxito
             html5QrcodeScanner.clear();
 
-            // Mostrar texto escaneado y enviar al backend
-            document.getElementById("resultado").innerText = "Procesando...";
+            const mensajeDiv = document.getElementById("mensaje-escaneo");
+            mensajeDiv.textContent = "Procesando...";
+            mensajeDiv.className = "info";
 
             fetch("/admin/registrar_asistencia_evento", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                qr_url: decodedText,
-                evento_id: {{ evento.id | tojson }}
+                    qr_url: decodedText,
+                    evento_id: {{ evento.id | tojson }}
                 })
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("resultado").innerText = data.mensaje || data.error;
+                mensajeDiv.textContent = data.mensaje || data.error || "Respuesta desconocida";
+                mensajeDiv.className = "";
+
+                if (data.mensaje) {
+                    mensajeDiv.classList.add("exito");
+                } else if (data.error) {
+                    mensajeDiv.classList.add("error");
+                } else {
+                    mensajeDiv.classList.add("info");
+                }
+
                 setTimeout(() => {
-                    window.location.reload();  // Reiniciar escáner
+                    mensajeDiv.textContent = "";
+                    mensajeDiv.className = "";
+                    window.location.reload();
                 }, 3000);
             })
             .catch(error => {
-                document.getElementById("resultado").innerText = "Error al procesar: " + error;
+                mensajeDiv.textContent = "Error al procesar: " + error;
+                mensajeDiv.className = "error";
             });
         }
 

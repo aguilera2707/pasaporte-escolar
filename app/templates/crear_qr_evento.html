@@ -46,6 +46,7 @@
                 <th>Longitud</th>
                 <th>QR</th>
                 <th>Editar</th>
+                <th>Historial</th>
             </tr>
         </thead>
         <tbody>
@@ -58,6 +59,9 @@
                 <td>{{ e.longitud }}</td>
                 <td><img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}" width="50"></td>
                 <td><a href="{{ url_for('editar_evento', evento_id=e.id) }}">Editar</a></td>
+                <td>
+                <a href="{{ url_for('historial_escaneos_evento', evento_id=e.id) }}" class="btn btn-small">📋 Ver historial</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

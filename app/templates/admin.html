@@ -1,126 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>   
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Panel de Administración</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 </head> 
 <body>
-    <p><a href="/logout">Cerrar sesión</a></p>
+    <div style="text-align: right;">
+    <p><a href="{{ url_for('logout') }}">Cerrar sesión</a></p>
+    <p>Usuario: {{ session.get('nombre_usuario') }}</p>
+    </div>
 
     <nav class="admin-navbar">
         <ul>
-            <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
-            <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Administradores</a></li>
-            <li><a href="{{ url_for('crear_admin') }}">➕ Nuevo Administrador</a></li>
-            <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Agregar Familia</a></li>
-            <li><a href="{{ url_for('crear_qr_evento') }}">📸 Crear QR Evento</a></li>
-            <li><a href="{{ url_for('crear_lugar') }}">📍 Crear Lugar Frecuente</a></li>
+            {% if rol == 'admin' %}
+                <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
+                <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Usuarios</a></li>
+                <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Familias</a></li>
+                <li><a href="{{ url_for('crear_qr_evento') }}">📸 Eventos</a></li>
+                <li><a href="{{ url_for('crear_lugar') }}">📍 Crear Lugar Frecuente</a></li>
+                <li><a > 🗳️ Puntos Masivos</a></li>
+                <li><a > 💽 Log</a></li>
+            {% elif rol == 'supervisor' %}
+                <!-- Solo acceso al escaneo de eventos -->
+                <li><h1><a>Panel de Supervisor</a></h1></li>
+            {% endif %}
         </ul>
     </nav>
+
+
     
     <h1>Panel de Administración</h1>
 
     <h2>Escaneo de Eventos (Staff)</h2>
-    <form method="get" id="form-ir-a-evento" style="margin-bottom: 30px;">
-        <label for="selector-evento"><strong>Selecciona un evento:</strong></label><br>
-        <select id="selector-evento" style="padding: 8px; width: 300px;">
-            <option value="">-- Elegir evento --</option>
-            {% for evento in eventos %}
-                <option value="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
-                    {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
-                </option>
-            {% endfor %}
-        </select>
-        <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
-    </form>
+        <form method="get" id="form-ir-a-evento" style="margin-bottom: 30px;">
+            <label for="selector-evento"><strong>Selecciona un evento:</strong></label><br />
+            <select id="selector-evento" style="padding: 8px; width: 300px;">
+                <option value="">-- Elegir evento --</option>
+                {% for evento in eventos %}
+                    <option value="{{ url_for('vista_escaneo_evento', evento_id=evento.id) }}">
+                        {{ evento.nombre_evento }} - {{ evento.puntos }} puntos
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
+        </form>
 
-    <table id="tabla-familias" class="display">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Contraseña</th>
-                <th>Puntos</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for f in familias %}
-            <tr>
-                <td>{{ f.id }}</td>
-                <td>{{ f.nombre }}</td>
-                <td>{{ f.correo }}</td>
-                <td>{{ f.password }}</td>
-                <td>{{ f.puntos }}</td>
-                <td>
-                    <a href="/familia/{{ f.id }}/ver">Ver</a> |
-                    <a href="/familia/{{ f.id }}/editar">✏️ Editar</a> |
-                    <button onclick="sumar({{ f.id }})">➕</button>
-                    <button onclick="canjear({{ f.id }})">➖</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h2>Eventos con QR</h2>
-    <h3>🆕 Último evento</h3>
-    {% if ultimo_evento %}
-        <div class="evento">
-            <p><strong>{{ ultimo_evento.nombre_evento }}</strong> — {{ ultimo_evento.puntos }} puntos</p>
-            <a href="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" target="_blank">
-                <img src="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" width="200" loading="lazy">
-            </a><br>
-            <a href="{{ url_for('descargar_qr_evento', filename=ultimo_evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
-            <form action="{{ url_for('eliminar_evento', evento_id=ultimo_evento.id) }}" method="post" style="display:inline;">
-                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
-                    🗑 Eliminar
-                </button>
-            </form>
-        </div>
-    {% else %}
-        <p>No hay eventos registrados aún.</p>
+    {% if rol in ['admin', 'supervisor'] %}
+        <h2>Familias Registradas</h2>
+        <table id="tabla-familias" class="display">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Contraseña</th>
+                    <th>Puntos</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in familias %}
+                <tr>
+                    <td>{{ f.id }}</td>
+                    <td>{{ f.nombre }}</td>
+                    <td>{{ f.correo }}</td>
+                    <td>{{ f.password }}</td>
+                    <td>{{ f.puntos }}</td>
+                    <td>
+                        <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a> |
+                        <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a> |
+                        {% if rol == 'admin' %}
+                        <button onclick="sumar({{ f.id }})">➕</button>
+                        {% endif %}
+                        <button onclick="canjear({{ f.id }})">➖</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% endif %}
 
-    <hr>
+    {% if rol == 'admin' %}
+        <h2>Eventos con QR</h2>
+        <h3>🆕 Último evento</h3>
+        {% if ultimo_evento %}
+            <div class="evento">
+                <p><strong>{{ ultimo_evento.nombre_evento }}</strong> — {{ ultimo_evento.puntos }} puntos</p>
+                <a href="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" target="_blank">
+                    <img src="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" width="200" loading="lazy" />
+                </a><br />
+                <a href="{{ url_for('descargar_pdf_qr_evento', evento_id=ultimo_evento.id) }}" class="btn btn-primary">📥 Descargar QR (PDF)</a>
+                <form action="{{ url_for('eliminar_evento', evento_id=ultimo_evento.id) }}" method="post" style="display:inline;">
+                    <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">🗑 Eliminar</button>
+                </form>
+            </div>
+        {% else %}
+            <p>No hay eventos registrados aún.</p>
+        {% endif %}
 
-    <button onclick="toggleEventos()">📂 Ver eventos anteriores</button>
-    <div id="eventos-anteriores" style="display: none; margin-top: 20px;">
-        {% for evento in otros_eventos %}
-        <div class="evento">
-            <p><strong>{{ evento.nombre_evento }}</strong> — {{ evento.puntos }} puntos</p>
-            <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" target="_blank">
-                <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" loading="lazy">
-            </a><br>
-            <a href="{{ url_for('descargar_qr_evento', filename=evento.qr_filename) }}" class="btn btn-primary">📥 Descargar QR</a>
-            <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
-                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">
-                    🗑 Eliminar
-                </button>
-            </form>
+        <hr />
+
+        <button onclick="toggleEventos()">📂 Ver eventos anteriores</button>
+        <div id="eventos-anteriores" style="display: none; margin-top: 20px;">
+            {% for evento in otros_eventos %}
+            <div class="evento">
+                <p><strong>{{ evento.nombre_evento }}</strong> — {{ evento.puntos }} puntos</p>
+                <a href="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" target="_blank">
+                    <img src="{{ url_for('static', filename='qr_eventos/' + evento.qr_filename) }}" width="150" loading="lazy" />
+                </a><br />
+                <a href="{{ url_for('descargar_pdf_qr_evento', evento_id=evento.id) }}" class="btn btn-primary">📥 Descargar QR (PDF)</a>
+                <form action="{{ url_for('eliminar_evento', evento_id=evento.id) }}" method="post" style="display:inline;">
+                    <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">🗑 Eliminar</button>
+                </form>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
+
+        
+    {% endif %}
+
+<script>
+    document.getElementById("form-ir-a-evento").addEventListener("submit", function(e) {
+        e.preventDefault(); // evitar submit estándar
+        const url = document.getElementById("selector-evento").value;
+        if (url) {
+            window.location.href = url; // redirigir a la URL seleccionada
+        } else {
+            alert("Selecciona un evento válido.");
+        }
+    });
+</script>
 
     <!-- jQuery y DataTables -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
-        document.getElementById("form-ir-a-evento").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const url = document.getElementById("selector-evento").value;
-            if (url) {
-                window.location.href = url;
-            } else {
-                alert("Selecciona un evento válido.");
-            }
-        });
-
         $(document).ready(function () {
             $('#tabla-familias').DataTable({
                 language: {
@@ -232,25 +250,6 @@
             });
         }
     </script>
-    <script>
-let timeout;
-
-// Función que redirige al logout tras 5 minutos de inactividad
-function iniciarTemporizadorInactividad() {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-        alert("Tu sesión ha expirado por inactividad.");
-        window.location.href = "{{ url_for('logout') }}";
-    }, 5 * 60 * 1000); // 5 minutos
-}
-
-// Reinicia el temporizador con cualquier actividad del usuario
-['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(event => {
-    document.addEventListener(event, iniciarTemporizadorInactividad);
-});
-
-iniciarTemporizadorInactividad();
-</script>
-
+    
 </body>
 </html>

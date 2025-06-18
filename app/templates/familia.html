@@ -66,7 +66,7 @@
         <tbody>
         {% for transaccion in transacciones %}
             <tr>
-                <td>{{ transaccion.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ transaccion.fecha | localtime }}</td>
                 <td>
                     {% if transaccion.tipo == 'suma' %}
                         Acreditación
@@ -90,17 +90,26 @@
     <h2>Registrar transacción</h2>
     <form id="transaccionForm" class="transaction-form">
         <label for="tipo_reg">Tipo:</label>
+        {% if rol == 'admin' %}
         <select name="tipo" id="tipo_reg" required>
-            <option value="suma">Suma</option>
-            <option value="canje">Canje</option>
-        </select>
+        {% if rol == 'admin' %}
+        <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Suma</option>
+        {% endif %}
+        <option value="canje" {% if request.args.get('tipo') == 'canje' or rol != 'admin' %}selected{% endif %}>Canje</option>
+    </select>
+
+        {% else %}
+        <input type="hidden" name="tipo" value="canje">
+        <span class="tipo-fijo">Canje</span>
+        {% endif %}
+        
         <input type="number" name="puntos" required min="1" placeholder="Cantidad de puntos">
         <input type="text" name="descripcion" placeholder="Descripción">
         <button type="submit">Registrar</button>
     </form>
     <div id="mensaje-transaccion"></div>
 
-    <a href="{{ url_for('lista_familias') }}" class="back-link">← Volver al listado de familias</a>
+    <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
 
     <script>
     document.getElementById("transaccionForm").addEventListener("submit", function(e) {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Crear Administrador</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
 </head>
 <body>
     <h1>Crear nuevo administrador</h1>
@@ -24,6 +24,12 @@
 
         <label for="password">Contraseña:</label>
         <input type="password" name="password" required><br>
+
+        <label for="rol">Rol:</label>
+        <select name="rol" id="rol" required>
+            <option value="admin">Administrador</option>
+            <option value="supervisor">Supervisor</option>
+        </select><br><br>
 
         <button type="submit">Crear administrador</button>
     </form>

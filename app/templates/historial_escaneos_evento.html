@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Escaneos - {{ evento.nombre_evento }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <h1>📋 Historial de escaneos — {{ evento.nombre_evento }}</h1>
+    <a href="{{ url_for('crear_qr_evento') }}">← Volver a eventos</a>
+    <br><br>
+    <a href="{{ url_for('exportar_historial_escaneos_evento', evento_id=evento.id) }}" class="btn btn-primary">
+    📥 Exportar a Excel (CSV)
+    </a>
+
+    <br><br>
+    <table>
+        <thead>
+            <tr>
+                <th>ID Familia</th>
+                <th>Nombre Familia</th>
+                <th>Fecha de escaneo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in registros %}
+                <tr>
+                    <td>{{ r.familia_id }}</td>
+                    <td>{{ r.familia.nombre if r.familia else '-' }}</td>
+                    <td>{{ r.fecha | localtime }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="3">No hay registros de escaneo.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

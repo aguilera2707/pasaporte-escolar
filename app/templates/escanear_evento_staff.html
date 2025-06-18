@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/escanear.css') }}">
 </head>
 <body>
+    <p>Usuario: <strong>{{ session.get('admin') }}</strong> | Rol: <strong>{{ session.get('rol') }}</strong> | <a href="{{ url_for('logout') }}">Cerrar sesión</a></p>
+
     <h1>Escanear código QR de familia</h1>
 
     <label for="evento_id">Selecciona el evento:</label>
@@ -21,8 +23,8 @@
 
     <button onclick="enviarEscaneo()">Registrar asistencia</button>
 
-    <div id="resultado"></div>
-    <div id="error"></div>
+    <div id="resultado" style="color: green; margin-top: 15px;"></div>
+    <div id="error" style="color: red; margin-top: 15px;"></div>
 
     <script>
         function enviarEscaneo() {
@@ -34,12 +36,22 @@
             resultado.textContent = "";
             error.textContent = "";
 
+            if (!eventoId) {
+                error.textContent = "Por favor selecciona un evento.";
+                return;
+            }
+            if (!familiaId) {
+                error.textContent = "Por favor ingresa el ID de la familia.";
+                return;
+            }
+
             axios.post("/api/escanear_qr_evento", {
                 evento_id: eventoId,
                 familia_id: familiaId
             })
             .then(res => {
                 resultado.textContent = res.data.mensaje;
+                error.textContent = "";
             })
             .catch(err => {
                 if (err.response && err.response.data.error) {
@@ -47,8 +59,11 @@
                 } else {
                     error.textContent = "Error al conectar con el servidor";
                 }
+                resultado.textContent = "";
             });
         }
     </script>
 </body>
 </html>
+
+

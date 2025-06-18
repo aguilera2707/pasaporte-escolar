@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil_familia.css') }}">
 </head>
 <body>
+    <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="mensajes-flash">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <!-- resto de tu contenido -->
+
     <div class="container">
         <div class="header">
             <h1>👨‍👩‍👧 ¡Hola, {{ familia.nombre }}!</h1>
@@ -24,16 +38,19 @@
                 <form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
                     <button class="btn-download" type="submit">📥 Descargar QR</button>
                 </form>
+                <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
+                <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
+                </form>
 
-                {% if ultimo_evento %}
-                    <button id="btn-escanear">📷 Escanear nuevo evento</button>
+                {% if ultimo_evento and rol in ['admin', 'supervisor'] %}
+                <button id="btn-escanear">📷 Escanear nuevo evento</button>
 
-                    <div id="scanner-container" style="display: none; margin-top: 20px;">
-                        <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
-                        <p id="scan-status">Apunta al código QR del evento</p>
-                    </div>
+                <div id="scanner-container" style="display: none; margin-top: 20px;">
+                <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
+                <p id="scan-status">Apunta al código QR del evento</p>
+                </div>
                 {% else %}
-                    <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
+                <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
                 {% endif %}
             </div>
         </div>
@@ -68,7 +85,7 @@
                 <div class="transacciones-scroll">
                     {% for t in transacciones %}
                         <div class="transaccion-card">
-                            <p class="fecha">{{ t.fecha.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p class="fecha">{{ t.fecha | localtime }}</p>
                             <p class="detalle">
                                 <strong>
                                     {{ '✅ Ganaste' if t.tipo == 'suma' else '🔻 Canjeaste' }}
