@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <title>Historial de Escaneos - {{ evento.nombre_evento }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 </head>
 <body>
     <h1>📋 Historial de escaneos — {{ evento.nombre_evento }}</h1>
     <a href="{{ url_for('crear_qr_evento') }}">← Volver a eventos</a>
     <br><br>
     <a href="{{ url_for('exportar_historial_escaneos_evento', evento_id=evento.id) }}" class="btn btn-primary">
-    📥 Exportar a Excel (CSV)
+        📥 Exportar a Excel (CSV)
     </a>
 
     <br><br>
-    <table>
+    <table id="tabla-historial" class="display" style="width:100%">
         <thead>
             <tr>
                 <th>ID Familia</th>
@@ -34,5 +36,37 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- jQuery y DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        // Búsqueda que ignora acentos y mayúsculas
+        jQuery.fn.DataTable.ext.type.search.string = function(data) {
+            return !data ?
+                '' :
+                typeof data === 'string' ?
+                    data.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() :
+                    data;
+        };
+
+        $(document).ready(function () {
+            $('#tabla-historial').DataTable({
+                language: {
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    paginate: {
+                        previous: "←",
+                        next: "→"
+                    },
+                    zeroRecords: "No se encontraron coincidencias",
+                },
+                pageLength: 10,
+                lengthMenu: [5, 10, 20, 50, 100]
+            });
+        });
+    </script>
 </body>
 </html>

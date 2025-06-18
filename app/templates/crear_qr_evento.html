@@ -5,7 +5,8 @@
     <title>Crear QR para Evento</title>
     
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
-
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 </head>
 <body>
 
@@ -18,12 +19,12 @@
 
     <!-- Selector de lugares guardados -->
     <label for="lugar_frecuente"><strong>Lugar frecuente:</strong></label>
-<select id="lugar_frecuente" onchange="llenarCoordenadas()" style="padding: 8px; width: 100%;">
-    <option value="">-- Seleccionar lugar frecuente --</option>
-    {% for lugar in lugares %}
-        <option value="{{ lugar.latitud }},{{ lugar.longitud }}">{{ lugar.nombre }}</option>
-    {% endfor %}
-</select>
+    <select id="lugar_frecuente" onchange="llenarCoordenadas()" style="padding: 8px; width: 100%;">
+        <option value="">-- Seleccionar lugar frecuente --</option>
+        {% for lugar in lugares %}
+            <option value="{{ lugar.latitud }},{{ lugar.longitud }}">{{ lugar.nombre }}</option>
+        {% endfor %}
+    </select>
 
     <input type="text" id="latitud" name="latitud" placeholder="Latitud" required>
     <input type="text" id="longitud" name="longitud" placeholder="Longitud" required>
@@ -59,31 +60,13 @@
                 <td>{{ e.longitud }}</td>
                 <td><img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}" width="50"></td>
                 <td><a href="{{ url_for('editar_evento', evento_id=e.id) }}">Editar</a></td>
-                <td>
-                <a href="{{ url_for('historial_escaneos_evento', evento_id=e.id) }}" class="btn btn-small">📋 Ver historial</a>
-                </td>
+                <td><a href="{{ url_for('historial_escaneos_evento', evento_id=e.id) }}" class="btn btn-small">📋 Ver historial</a></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     <button type="submit" class="btn-danger">Eliminar seleccionados</button>
-
 </form>
-
-
-<script>
-    document.getElementById('lugar_guardado').addEventListener('change', function () {
-        const valor = this.value;
-        if (valor) {
-            const [lat, lng] = valor.split(',');
-            document.getElementById('latitud').value = lat;
-            document.getElementById('longitud').value = lng;
-        } else {
-            document.getElementById('latitud').value = '';
-            document.getElementById('longitud').value = '';
-        }
-    });
-</script>
 
 <script>
 function llenarCoordenadas() {
@@ -100,5 +83,38 @@ function llenarCoordenadas() {
     }
 }
 </script>
+
+<!-- jQuery y DataTables -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    // Búsqueda sin considerar acentos ni mayúsculas
+    jQuery.fn.DataTable.ext.type.search.string = function(data) {
+        return !data ?
+            '' :
+            typeof data === 'string' ?
+                data.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() :
+                data;
+    };
+
+    $(document).ready(function () {
+        $('#tabla-eventos').DataTable({
+            language: {
+                search: "🔍 Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando _START_ a _END_ de _TOTAL_ eventos",
+                paginate: {
+                    previous: "←",
+                    next: "→"
+                },
+                zeroRecords: "No se encontraron coincidencias",
+            },
+            pageLength: 10,
+            lengthMenu: [5, 10, 20, 50, 100]
+        });
+    });
+</script>
+
 </body>
 </html>

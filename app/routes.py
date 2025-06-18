@@ -1429,3 +1429,120 @@ def descargar_pdf_qr_evento(evento_id):
 
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name=f"{evento.nombre_evento}_QR.pdf", mimetype='application/pdf')
+
+@app.route('/puntos-masivos', methods=['GET', 'POST'])
+def puntos_masivos():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+    rol = session.get('rol')
+    if rol != 'admin':
+        flash('No tienes permisos para acceder a esta página', 'error')
+        return redirect(url_for('panel_admin'))
+
+    familias = Familia.query.all()
+
+    if request.method == 'POST':
+        ids_seleccionados = request.form.getlist('familia_ids')  # lista de ids seleccionados
+        tipo = request.form.get('tipo')  # 'suma' o 'canje'
+        puntos = request.form.get('puntos')
+        descripcion = request.form.get('descripcion')
+
+        if not ids_seleccionados or not puntos or not tipo or not descripcion:
+            flash('Completa todos los campos y selecciona al menos una familia', 'error')
+            return redirect(url_for('puntos_masivos'))
+
+        try:
+            puntos = int(puntos)
+            if puntos <= 0:
+                flash('Los puntos deben ser un número positivo', 'error')
+                return redirect(url_for('puntos_masivos'))
+        except ValueError:
+            flash('Los puntos deben ser un número válido', 'error')
+            return redirect(url_for('puntos_masivos'))
+
+        # Procesar cada familia seleccionada
+        for fid in ids_seleccionados:
+            familia = Familia.query.get(int(fid))
+            if familia:
+                if tipo == 'suma':
+                    familia.puntos += puntos
+                elif tipo == 'canje':
+                    familia.puntos -= puntos
+                    if familia.puntos < 0:
+                        familia.puntos = 0
+                # Registrar transacción
+                nueva_transaccion = Transaccion(
+                    familia_id=familia.id,
+                    tipo=tipo,
+                    puntos=puntos,
+                    descripcion=descripcion,
+                    fecha=datetime.utcnow()
+                )
+                db.session.add(nueva_transaccion)
+
+        db.session.commit()
+        flash(f'Se han actualizado los puntos de {len(ids_seleccionados)} familias.', 'success')
+        return redirect(url_for('puntos_masivos'))
+
+    return render_template('puntos_masivos.html', familias=familias)
+
+from app import app, db
+from flask import render_template, redirect, url_for, request, flash, session
+from app.models import Familia, Transaccion, MovimientoPuntos  # ajusta nombres
+
+# Borrar una sola familia
+@app.route('/familia/<int:familia_id>/eliminar', methods=['POST'])
+def eliminar_familia(familia_id):
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    familia = Familia.query.get_or_404(familia_id)
+
+    # 1) Borrar transacciones asociadas
+    Transaccion.query.filter_by(familia_id=familia_id).delete()
+    # 2) Borrar movimientos de puntos asociados
+    MovimientoPuntos.query.filter_by(familia_id=familia_id).delete()
+
+    # 3) Borrar la familia
+    db.session.delete(familia)
+    db.session.commit()
+
+    flash('Familia eliminada correctamente', 'success')
+    return redirect(url_for('lista_familias_eliminar'))
+
+
+# Borrado masivo
+@app.route('/familias/eliminar_masivo', methods=['POST'])
+def eliminar_familias_masivo():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+
+    ids = request.form.getlist('familias_seleccionadas')
+    if ids:
+        # Borra todo de una sola pasada
+        Transaccion.query.filter(Transaccion.familia_id.in_(ids)).delete(synchronize_session=False)
+        MovimientoPuntos.query.filter(MovimientoPuntos.familia_id.in_(ids)).delete(synchronize_session=False)
+        Familia.query.filter(Familia.id.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f'Se eliminaron {len(ids)} familias', 'success')
+    else:
+        flash('No se seleccionó ninguna familia', 'error')
+
+    return redirect(url_for('lista_familias_eliminar'))
+
+
+# Listar en la nueva plantilla
+@app.route('/admin/familias/eliminar')
+def lista_familias_eliminar():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+    familias = Familia.query.all()
+    return render_template('lista_familias_eliminar.html', familias=familias)
+
+
+@app.route('/log')
+@login_requerido_admin
+def log():
+    # aquí obtienes tus registros
+    registros = Registro.query.order_by(Registro.fecha.desc()).all()
+    return render_template('log.html', registros=registros)

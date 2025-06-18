@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Puntos Masivos - Cuponera Escolar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+</head>
+<body>
+    <h1>Puntos Masivos</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <table id="tabla-familias" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all" /> Seleccionar Todo</th>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Puntos actuales</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for familia in familias %}
+                <tr>
+                    <td><input type="checkbox" name="familia_ids" value="{{ familia.id }}" /></td>
+                    <td>{{ familia.id }}</td>
+                    <td>{{ familia.nombre }}</td>
+                    <td>{{ familia.correo }}</td>
+                    <td>{{ familia.puntos }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <br/>
+
+        <label for="tipo">Acción:</label>
+        <select name="tipo" id="tipo" required>
+            <option value="" disabled selected>Selecciona acción</option>
+            <option value="suma">Sumar puntos</option>
+            <option value="canje">Restar puntos</option>
+        </select>
+
+        <label for="puntos">Cantidad de puntos:</label>
+        <input type="number" name="puntos" id="puntos" min="1" required />
+
+        <label for="descripcion">Motivo/Descripción:</label>
+        <input type="text" name="descripcion" id="descripcion" required />
+
+        <button type="submit">Aplicar a familias seleccionadas</button>
+    </form>
+    <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+
+    <!-- jQuery y DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#tabla-familias').DataTable({
+                language: {
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
+                    paginate: {
+                        previous: "←",
+                        next: "→"
+                    },
+                    zeroRecords: "No se encontraron coincidencias",
+                },
+                pageLength: 10,
+                lengthMenu: [5, 10, 20, 50, 100]
+            });
+
+            // Script para seleccionar/deseleccionar todos
+            $('#select-all').on('click', function() {
+                var rows = $('#tabla-familias').DataTable().rows({ 'search': 'applied' }).nodes();
+                $('input[type="checkbox"]', rows).prop('checked', this.checked);
+            });
+
+            // Si algún checkbox individual cambia, actualiza el checkbox "select-all"
+            $('#tabla-familias tbody').on('change', 'input[type="checkbox"]', function(){
+                if(!this.checked){
+                    var el = $('#select-all').get(0);
+                    if(el && el.checked && ('indeterminate' in el)){
+                        el.indeterminate = true;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

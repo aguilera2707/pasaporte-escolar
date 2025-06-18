@@ -14,21 +14,21 @@
     </div>
 
     <nav class="admin-navbar">
-        <ul>
-            {% if rol == 'admin' %}
-                <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
-                <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Usuarios</a></li>
-                <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Familias</a></li>
-                <li><a href="{{ url_for('crear_qr_evento') }}">📸 Eventos</a></li>
-                <li><a href="{{ url_for('crear_lugar') }}">📍 Crear Lugar Frecuente</a></li>
-                <li><a > 🗳️ Puntos Masivos</a></li>
-                <li><a > 💽 Log</a></li>
-            {% elif rol == 'supervisor' %}
-                <!-- Solo acceso al escaneo de eventos -->
-                <li><h1><a>Panel de Supervisor</a></h1></li>
-            {% endif %}
-        </ul>
-    </nav>
+    <ul>
+    {% if rol == 'admin' %}
+        <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
+        <li><a href="{{ url_for('lista_administradores') }}">🧑‍💼 Ver Usuarios</a></li>
+        <li><a href="{{ url_for('lista_familias') }}">👨‍👩‍👧‍👦 Familias</a></li>
+        <li><a href="{{ url_for('crear_qr_evento') }}">📸 Eventos</a></li>
+        <li><a href="{{ url_for('crear_lugar') }}">📍 Crear Lugar Frecuente</a></li>
+        <li><a href="{{ url_for('puntos_masivos') }}">🗳️ Puntos Masivos</a></li>
+        <li><a href="{{ url_for('lista_familias_eliminar') }}">🗑️ Eliminar Familias</a></li>
+        <li><a href="{{ url_for('log') }}">💽 Log</a></li>
+    {% elif rol == 'supervisor' %}
+        <!-- … -->
+    {% endif %}
+    </ul>
+</nav>
 
 
     
@@ -48,40 +48,40 @@
             <button type="submit" style="padding: 8px 12px; margin-left: 10px;">Ir</button>
         </form>
 
-    {% if rol in ['admin', 'supervisor'] %}
-        <h2>Familias Registradas</h2>
-        <table id="tabla-familias" class="display">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Correo</th>
-                    <th>Contraseña</th>
-                    <th>Puntos</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for f in familias %}
-                <tr>
-                    <td>{{ f.id }}</td>
-                    <td>{{ f.nombre }}</td>
-                    <td>{{ f.correo }}</td>
-                    <td>{{ f.password }}</td>
-                    <td>{{ f.puntos }}</td>
-                    <td>
-                        <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a> |
-                        <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a> |
-                        {% if rol == 'admin' %}
-                        <button onclick="sumar({{ f.id }})">➕</button>
-                        {% endif %}
-                        <button onclick="canjear({{ f.id }})">➖</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if rol in ['admin', 'supervisor'] %}
+    <h2>Familias Registradas</h2>
+    <table id="tabla-familias" class="display">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Contraseña</th>
+                <th>Puntos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in familias %}
+            <tr>
+                <td>{{ f.id }}</td>
+                <td>{{ f.nombre }}</td>
+                <td>{{ f.correo }}</td>
+                <td>{{ f.password }}</td>
+                <td>{{ f.puntos }}</td>
+                <td>
+                    <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a> |
+                    <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a> |
+                    {% if rol == 'admin' %}
+                        <button onclick="sumar({{ f.id }})">➕</button> |
+                    {% endif %}
+                    <button onclick="canjear({{ f.id }})">➖</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
 
     {% if rol == 'admin' %}
         <h2>Eventos con QR</h2>
@@ -250,6 +250,6 @@
             });
         }
     </script>
-    
+
 </body>
 </html>

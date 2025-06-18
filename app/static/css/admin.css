@@ -367,3 +367,54 @@ button:hover {
         margin-bottom: 1rem;
     }
 }
+
+/* Contenedor de botones/links de acciones */
+.acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;        /* separación uniforme */
+}
+
+/* Quitar márgenes extra en formularios internos */
+.acciones form {
+    margin: 0;
+}
+
+/* Links de “Ver” y “Editar” */
+.acciones a {
+    padding: 4px 8px;
+    background: #f0f4f8;
+    border-radius: 4px;
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.acciones a:hover {
+    background: #e0e6ea;
+}
+
+/* Botones de suma y canje */
+.acciones button.sumar {
+    background-color: #27ae60;
+    color: white;
+    padding: 4px 8px;
+}
+.acciones button.canjear {
+    background-color: #d35400;
+    color: white;
+    padding: 4px 8px;
+}
+
+/* Botón eliminar (papelero) */
+.acciones button.eliminar {
+    background: none;
+    color: #e74c3c;
+    font-size: 1.1rem;
+    padding: 0;
+    line-height: 1;
+    cursor: pointer;
+}
+.acciones button.eliminar:hover {
+    opacity: 0.8;
+}

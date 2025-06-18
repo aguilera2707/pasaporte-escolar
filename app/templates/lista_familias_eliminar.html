@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Familias (Eliminar)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+</head>
+<body>
+    <h1>👨‍👩‍👧 Familias Registradas</h1>
+    <form id="form-eliminar-masivo"
+        method="POST"
+        action="{{ url_for('eliminar_familias_masivo') }}"
+        onsubmit="return confirmarEliminacionMasiva()">
+
+    <table id="tabla-familias" class="display">
+        <thead>
+        <tr>
+            <th><input type="checkbox" id="seleccionar-todos"></th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Puntos</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for f in familias %}
+        <tr>
+            <td><input type="checkbox" name="familias_seleccionadas" value="{{ f.id }}"></td>
+            <td>{{ f.id }}</td>
+            <td>{{ f.nombre }}</td>
+            <td>{{ f.correo }}</td>
+            <td>{{ f.puntos }}</td>
+            <td>
+            <form method="POST"
+                    action="{{ url_for('eliminar_familia', familia_id=f.id) }}"
+                    style="display:inline"
+                    onsubmit="return confirm('¿Eliminar esta familia?')">
+                <button type="submit" class="btn-danger">🗑 Eliminar</button>
+            </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn-danger" style="margin-top: 1rem;">
+        🗑 Eliminar seleccionados
+    </button>
+    </form>
+    <div style="margin-top: 2rem;">
+    <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+    // DataTables init
+    $('#tabla-familias').DataTable({
+        language: {
+        search: "🔍 Buscar:",
+        lengthMenu: "Mostrar _MENU_ registros",
+        info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
+        paginate: { previous: "←", next: "→" },
+        zeroRecords: "No se encontraron coincidencias"
+        },
+        pageLength: 10,
+        lengthMenu: [5,10,20,50,100]
+    });
+
+    // Seleccionar todos
+    $('#seleccionar-todos').on('change', function(){
+        $('input[name="familias_seleccionadas"]').prop('checked', this.checked);
+    });
+
+    // Confirmar masivo
+    function confirmarEliminacionMasiva(){
+        let count = $('input[name="familias_seleccionadas"]:checked').length;
+        if(!count){
+        alert('Selecciona al menos una familia.');
+        return false;
+        }
+        return confirm(`Vas a eliminar ${count} familia(s). ¿Continuar?`);
+    }
+    </script>
+</body>
+</html>
