@@ -7,53 +7,75 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <body>
-    <div style="text-align:left;">
+    <div style="text-align:left; margin-bottom:1rem;">
         <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
     </div>
     <h1>📜 Log de Actividades</h1>
 
-    <div class="filter-form">
-        <form method="GET">
-            <!-- ... filtros ... -->
-            <button type="submit" class="btn-primary">Filtrar</button>
-        </form>
+    <div class="filter-form" style="margin-bottom:1.5rem;">
+    <form method="GET">
+        <label>Usuario:</label>
+        <input type="text" name="usuario" value="{{ request.args.get('usuario','') }}">
+
+        <label>Acción:</label>
+        <select name="accion">
+            <option value="">-- Todas --</option>
+            {% for a in ['crear','editar','eliminar','suma','canje','inicio sesión','cierre sesión'] %}
+            <option value="{{ a }}" {% if request.args.get('accion')==a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Entidad:</label>
+        <select name="entidad">
+            <option value="">-- Todas --</option>
+            {% for e in ['Familia','Evento','Beneficio','Administrador','Admin'] %}
+            <option value="{{ e }}" {% if request.args.get('entidad')==e %}selected{% endif %}>{{ e }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Desde:</label>
+        <input type="date" name="desde" value="{{ request.args.get('desde','') }}">
+        <label>Hasta:</label>
+        <input type="date" name="hasta" value="{{ request.args.get('hasta','') }}">
+
+        <button type="submit" class="btn-primary">Filtrar</button>
+    </form>
     </div>
 
-    <table id="tabla-log" class="display">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Acción</th>
-                <th>Entidad</th>
-                <th>Detalles</th>
-            </tr>
-        </thead>
-<tbody>
-        {% for entry in entries %}
+    <table id="tabla-log" class="display stripe" style="width:100%;">
+    <thead>
         <tr>
-        <td>{{ entry.local_ts.strftime("%Y-%m-%d") }}</td>
-        <td>{{ "%02d:%02d:%02d"|format(
-            entry.local_ts.hour,
-            entry.local_ts.minute,
-            entry.local_ts.second) }}
-        </td>
-        <td>{{ entry.user }}</td>
-        <td>{{ entry.role }}</td>
-        <td>{{ entry.action }}</td>
-        <td>{{ entry.entity }}</td>
-        <td>{{ entry.details }}</td>
-    </tr>
-    {% endfor %}
-</tbody>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Acción</th>
+            <th>Entidad</th>
+            <th>Detalles</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        {# convertimos UTC a hora local directamente en la vista #}
+        {% set local = entry.timestamp.astimezone() %}
+        <tr>
+            <td>{{ local.strftime("%Y-%m-%d") }}</td>
+            <td>{{ "%02d:%02d:%02d"|format(local.hour, local.minute, local.second) }}</td>
+            <td>{{ entry.user }}</td>
+            <td>{{ entry.role }}</td>
+            <td>{{ entry.action }}</td>
+            <td>{{ entry.entity }}</td>
+            <td>{{ entry.details }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
     </table>
 
-    <!-- scripts DataTables -->
+    <!-- jQuery y DataTables JS -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
+      // Búsqueda sin acentos y case-insensitive
     jQuery.fn.DataTable.ext.type.search.string = data =>
         !data ? '' :
         typeof data === 'string' ?
@@ -62,17 +84,18 @@
 
     $(document).ready(function() {
         $('#tabla-log').DataTable({
+          order: [[0, 'desc'], [1, 'desc']],    // Fecha desc, Hora desc
             language: {
-                search: "🔍 Buscar:",
-                lengthMenu: "Mostrar _MENU_ registros",
-                info: "Mostrando _START_ a _END_ de _TOTAL_ entradas",
-                paginate: { previous: "←", next: "→" },
-                zeroRecords: "No se encontraron coincidencias"
+            search: "🔍 Buscar:",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ entradas",
+            paginate: { previous: "←", next: "→" },
+            zeroRecords: "No se encontraron coincidencias"
             },
             pageLength: 10,
             lengthMenu: [5, 10, 20, 50, 100]
         });
-    });
+        });
     </script>
 </body>
 </html>

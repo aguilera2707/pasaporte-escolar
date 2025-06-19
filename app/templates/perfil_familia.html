@@ -31,29 +31,29 @@
             <h2>Puntos actuales: <span>{{ familia.puntos }}</span></h2>
         </div>
 
-        <div class="qr-section">
-            <h2>Tu código QR</h2>
-            <div class="qr-wrapper">
-                <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
-                <form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
-                    <button class="btn-download" type="submit">📥 Descargar QR</button>
-                </form>
-                <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
-                <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
-                </form>
+<div class="qr-section">
+    <h2>Tu código QR</h2>
+    <div class="qr-wrapper">
+        <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
+        <form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
+            <button class="btn-download" type="submit">📥 Descargar QR</button>
+        </form>
+        <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
+            <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
+        </form>
 
-                {% if ultimo_evento and rol in ['admin', 'supervisor'] %}
-                <button id="btn-escanear">📷 Escanear nuevo evento</button>
-
-                <div id="scanner-container" style="display: none; margin-top: 20px;">
+        {% if ultimo_evento %}
+            <button id="btn-escanear">📷 Escanear nuevo evento</button>
+            <div id="scanner-container" style="display: none; margin-top: 20px;">
                 <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
                 <p id="scan-status">Apunta al código QR del evento</p>
-                </div>
-                {% else %}
-                <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
-                {% endif %}
             </div>
-        </div>
+        {% else %}
+            <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
+        {% endif %}
+    </div>
+</div>
+
 
         <div class="beneficios">
             <h2>🎁 Beneficios disponibles</h2>

@@ -149,6 +149,8 @@ def lista_familias():
             nueva_familia = Familia(nombre=nombre, correo=correo, password=password)
             db.session.add(nueva_familia)
             db.session.commit()
+            
+            
 
             # Generar QR
             qr_url = url_for('ver_familia', familia_id=nueva_familia.id, _external=True)
@@ -157,6 +159,18 @@ def lista_familias():
             os.makedirs(qr_folder, exist_ok=True)
             qr_path = os.path.join(qr_folder, f'familia_{nueva_familia.id}.png')
             qr.save(qr_path)
+            
+                    # ➕ Familia creada
+            entry = LogEntry(
+                timestamp=datetime.utcnow(),
+                user=session.get("nombre_usuario"),
+                role=session.get("rol"),
+                action="crear",
+                entity="Familia",
+                details=f"id={nueva_familia.id}, nombre={nueva_familia.nombre}"
+            )
+            db.session.add(entry)
+            db.session.commit()
 
             flash("Familia registrada exitosamente", "success")
             return redirect(url_for('lista_familias'))
@@ -527,6 +541,18 @@ def crear_admin():
         nuevo_admin.set_password(password)
         db.session.add(nuevo_admin)
         db.session.commit()
+        
+        # 👤 Admin creado
+        entry = LogEntry(
+            timestamp=datetime.utcnow(),
+            user=session.get("nombre_usuario"),
+            role=session.get("rol"),
+            action="crear",
+            entity="Administrador",
+            details=f"id={nuevo.id}, usuario={nuevo.usuario}"
+        )
+        db.session.add(entry)
+        db.session.commit()
 
         flash("Administrador creado correctamente", "success")
         return redirect(url_for('crear_admin'))
@@ -563,7 +589,20 @@ def eliminar_administrador(admin_id):
     else:
         db.session.delete(admin)
         db.session.commit()
-        flash("Administrador eliminado exitosamente", "success")
+        
+        # 🗑 Admin eliminado
+    entry = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=session.get("nombre_usuario"),
+        role=session.get("rol"),
+        action="eliminar",
+        entity="Administrador",
+        details=f"id={admin_id}"
+    )
+    db.session.add(entry)
+    db.session.commit()
+        
+    flash("Administrador eliminado exitosamente", "success")
 
     return redirect(url_for('lista_administradores'))
 
@@ -735,6 +774,18 @@ def crear_beneficio():
 
         beneficio = Beneficio(nombre=nombre, puntos_requeridos=puntos_requeridos)
         db.session.add(beneficio)
+        db.session.commit()
+        
+        # 🎁 Beneficio creado
+        entry = LogEntry(
+            timestamp=datetime.utcnow(),
+            user=session.get("nombre_usuario"),
+            role=session.get("rol"),
+            action="crear",
+            entity="Beneficio",
+            details=f"id={beneficio.id}, nombre={beneficio.nombre}"
+        )
+        db.session.add(entry)
         db.session.commit()
 
         flash("Beneficio creado exitosamente", "success")
@@ -990,6 +1041,18 @@ def crear_qr_evento():
 
         evento.qr_filename = qr_filename
         db.session.commit()
+        
+        # 🎯 Evento creado
+        entry = LogEntry(
+            timestamp=datetime.utcnow(),
+            user=session.get("nombre_usuario"),
+            role=session.get("rol"),
+            action="crear",
+            entity="Evento",
+            details=f"id={evento.id}, nombre={evento.nombre_evento}"
+        )
+        db.session.add(entry)
+        db.session.commit()
 
         flash('Evento QR creado con éxito.', 'success')
         return redirect(url_for('crear_qr_evento'))
@@ -1084,6 +1147,18 @@ def eliminar_evento(evento_id):
     # Eliminar el evento
     db.session.delete(evento)
     db.session.commit()
+    
+    # 🗑 Evento eliminado
+    entry = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=session.get("nombre_usuario"),
+        role=session.get("rol"),
+        action="eliminar",
+        entity="Evento",
+        details=f"id={evento_id}"
+    )
+    db.session.add(entry)
+    db.session.commit()
 
     flash("Evento eliminado correctamente", "exito")
     return redirect(url_for('panel_admin'))
@@ -1163,21 +1238,27 @@ from app import db
 
 @app.route('/familia/<int:familia_id>/editar', methods=['GET', 'POST'])
 def editar_familia(familia_id):
-    if 'admin_id' not in session:
-        return redirect(url_for('login'))
-
     familia = Familia.query.get_or_404(familia_id)
-
     if request.method == 'POST':
         familia.nombre = request.form['nombre']
         familia.correo = request.form['correo']
-        familia.password = request.form['password']  # En producción deberías hashearla
-
+        familia.password = request.form['password']
         db.session.commit()
-        flash('Familia actualizada correctamente', 'success')
-        # En vez de redirect, renderizas la misma plantilla con familia actualizada
-        return render_template('editar_familia.html', familia=familia)
 
+        # 📝 Familia editada
+        entry = LogEntry(
+            timestamp=datetime.utcnow(),
+            user=session.get("nombre_usuario"),
+            role=session.get("rol"),
+            action="editar",
+            entity="Familia",
+            details=f"id={familia.id}, nombre={familia.nombre}"
+        )
+        db.session.add(entry)
+        db.session.commit()
+
+        flash('Familia actualizada correctamente', 'success')
+        return render_template('editar_familia.html', familia=familia)
     return render_template('editar_familia.html', familia=familia)
 
 
@@ -1315,6 +1396,18 @@ def eliminar_beneficio(beneficio_id):
 
     beneficio = Beneficio.query.get_or_404(beneficio_id)
     db.session.delete(beneficio)
+    db.session.commit()
+    
+        # 🗑 Beneficio eliminado
+    entry = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=session.get("nombre_usuario"),
+        role=session.get("rol"),
+        action="eliminar",
+        entity="Beneficio",
+        details=f"id={beneficio_id}"
+    )
+    db.session.add(entry)
     db.session.commit()
     flash("Beneficio eliminado exitosamente", "success")
     return redirect(url_for('crear_beneficio'))
@@ -1499,6 +1592,20 @@ def puntos_masivos():
                 db.session.add(nueva_transaccion)
 
         db.session.commit()
+        
+        
+            # 🔢 Puntos masivos
+        entry = LogEntry(
+            timestamp=datetime.utcnow(),
+            user=session.get("nombre_usuario"),
+            role=session.get("rol"),
+            action="masivo_" + tipo,
+            entity="Familia",
+            details=f"{len(ids_seleccionados)} familias, pts={puntos}"
+        )
+        db.session.add(entry)
+        db.session.commit()
+        
         flash(f'Se han actualizado los puntos de {len(ids_seleccionados)} familias.', 'success')
         return redirect(url_for('puntos_masivos'))
 
@@ -1511,18 +1618,22 @@ from app.models import Familia, Transaccion, MovimientoPuntos  # ajusta nombres
 # Borrar una sola familia
 @app.route('/familia/<int:familia_id>/eliminar', methods=['POST'])
 def eliminar_familia(familia_id):
-    if 'admin_id' not in session:
-        return redirect(url_for('login'))
-
     familia = Familia.query.get_or_404(familia_id)
-
-    # 1) Borrar transacciones asociadas
     Transaccion.query.filter_by(familia_id=familia_id).delete()
-    # 2) Borrar movimientos de puntos asociados
     MovimientoPuntos.query.filter_by(familia_id=familia_id).delete()
-
-    # 3) Borrar la familia
     db.session.delete(familia)
+    db.session.commit()
+
+    # 🗑 Familia eliminada
+    entry = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=session.get("nombre_usuario"),
+        role=session.get("rol"),
+        action="eliminar",
+        entity="Familia",
+        details=f"id={familia_id}"
+    )
+    db.session.add(entry)
     db.session.commit()
 
     flash('Familia eliminada correctamente', 'success')
@@ -1567,6 +1678,12 @@ from app import db
 from datetime import datetime, timedelta
 import pytz
 
+from flask import request, render_template
+from app.models import LogEntry
+from app import db
+import pytz
+from datetime import datetime, timedelta
+
 @app.route("/admin/log")
 @login_requerido_admin
 def log():
@@ -1586,7 +1703,7 @@ def log():
     if entidad:
         q = q.filter(LogEntry.entity == entidad)
 
-    # filtro de fechas (en UTC)
+    # filtro de fechas UTC
     if fecha_desde:
         dt = datetime.strptime(fecha_desde, "%Y-%m-%d")
         q = q.filter(LogEntry.timestamp >= dt)
@@ -1596,9 +1713,11 @@ def log():
 
     entries = q.order_by(LogEntry.timestamp.desc()).all()
 
-    # convertir cada timestamp de UTC a hora local (ej. America/Mexico_City)
+    # Convertimos UTC → hora local
+    # Cambia "America/Mexico_City" por tu zona si es distinto
     local_tz = pytz.timezone("America/Mexico_City")
     for e in entries:
+        # e.timestamp es datetime UTC; hacemos astimezone
         e.local_ts = e.timestamp.replace(tzinfo=pytz.utc).astimezone(local_tz)
 
     return render_template("log.html", entries=entries)
