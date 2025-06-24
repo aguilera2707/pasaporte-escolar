@@ -10,23 +10,26 @@
 
 <div class="contenedor">
     <div class="tabs">
-        <button id="btn-admin" class="active" onclick="mostrarFormulario('admin')">Administrador</button>
-        <button id="btn-familia" onclick="mostrarFormulario('familia')">Familia</button>
+
+        <button id="btn-familia" class="active" onclick="mostrarFormulario('familia')">Familia</button>
+        <button id="btn-admin"  onclick="mostrarFormulario('admin')">Administrador</button>
+        
     </div>
 
+    <!-- Formulario de familia -->
+    <form id="form-familia" onsubmit="return validarFamilia()" method="POST" action="{{ url_for('login_familia') }}" >
+        <input type="email" name="correo" id="correo-familia" placeholder="Correo de familia" required>
+        <input type="password" name="password" id="pass-familia" placeholder="Contraseña" required>
+        <button type="submit">Ingresar</button>
+    </form>
+
     <!-- Formulario de administrador -->
-    <form id="form-admin" method="POST" action="{{ url_for('login') }}">
+    <form id="form-admin" method="POST" action="{{ url_for('login') }}" style="display:none;">
         <input type="text" name="usuario" placeholder="Usuario admin" required>
         <input type="password" name="password" placeholder="Contraseña" required>
         <button type="submit">Ingresar</button>
     </form>
 
-    <!-- Formulario de familia -->
-    <form id="form-familia" onsubmit="return validarFamilia()" method="POST" action="{{ url_for('login_familia') }}" style="display:none;">
-        <input type="email" name="correo" id="correo-familia" placeholder="Correo de familia" required>
-        <input type="password" name="password" id="pass-familia" placeholder="Contraseña" required>
-        <button type="submit">Ingresar</button>
-    </form>
 
     <!-- Mensajes de error con flash -->
     {% with messages = get_flashed_messages(category_filter=["error"]) %}

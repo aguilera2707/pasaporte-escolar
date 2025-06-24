@@ -6,24 +6,59 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
 </head>
 <body>
-
-<h2>Editar Evento</h2>
-<a href="{{ url_for('crear_qr_evento') }}" class="btn-volver">← Volver al panel</a>
+    <h2>Editar Evento</h2>
+    <a href="{{ url_for('crear_qr_evento') }}" class="btn-volver">← Volver al panel</a>
 
 <form method="POST">
-    <input type="text" name="nombre_evento" placeholder="Nombre del evento" required value="{{ evento.nombre_evento }}">
-    <input type="number" name="puntos" placeholder="Puntos a otorgar" required value="{{ evento.puntos }}">
+    <label>Nombre del evento:</label>
+    <input type="text" name="nombre_evento" required value="{{ evento.nombre_evento }}">
 
-    <label for="latitud"><strong>Latitud:</strong></label>
-    <input type="text" id="latitud" name="latitud" placeholder="Latitud" required value="{{ evento.latitud }}">
+    <label>Puntos a otorgar:</label>
+    <input type="number" name="puntos" required value="{{ evento.puntos }}">
 
-    <label for="longitud"><strong>Longitud:</strong></label>
-    <input type="text" id="longitud" name="longitud" placeholder="Longitud" required value="{{ evento.longitud }}">
+    <label>
+        <input type="checkbox" name="requiere_ubic" {% if evento.requiere_ubic %}checked{% endif %}>
+        Restringir por ubicación
+    </label>
 
-    <div class="form-footer">
+    <label>Válido desde:</label>
+    <input type="datetime-local" name="valid_from"
+            value="{{ evento.valid_from and evento.valid_from.strftime('%Y-%m-%dT%H:%M') }}">
+
+    <label>Válido hasta:</label>
+    <input type="datetime-local" name="valid_to"
+            value="{{ evento.valid_to   and evento.valid_to.strftime('%Y-%m-%dT%H:%M') }}">
+
+    <label for="lugar_frecuente"><strong>Lugar frecuente:</strong></label>
+    <select id="lugar_frecuente" onchange="llenarCoordenadas()" style="width:100%;padding:8px;">
+        <option value="">-- Seleccionar lugar frecuente --</option>
+        {% for lugar in lugares %}
+        <option value="{{ lugar.latitud }},{{ lugar.longitud }}"
+                {% if lugar.latitud==evento.latitud and lugar.longitud==evento.longitud %}selected{% endif %}>
+            {{ lugar.nombre }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <label>Latitud:</label>
+    <input type="text" id="latitud" name="latitud" required value="{{ evento.latitud }}">
+
+    <label>Longitud:</label>
+    <input type="text" id="longitud" name="longitud" required value="{{ evento.longitud }}">
+
+    <div style="margin-top:1em;">
         <button type="submit">💾 Guardar cambios</button>
     </div>
 </form>
 
+<script>
+    function llenarCoordenadas() {
+        const sel = document.getElementById('lugar_frecuente');
+        if (!sel.value) return;
+        const [lat, lon] = sel.value.split(',');
+        document.getElementById('latitud').value  = lat;
+        document.getElementById('longitud').value = lon;
+    }
+</script>
 </body>
 </html>

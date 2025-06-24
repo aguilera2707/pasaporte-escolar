@@ -329,6 +329,9 @@ def canjear_puntos(familia_id):
     except ValueError:
         return jsonify({'error': 'El valor de "puntos" debe ser un número entero'}), 400
     
+from datetime import datetime
+import pytz
+
 @app.route('/transaccion', methods=['POST'])
 def registrar_transaccion():
     data = request.get_json()
@@ -350,18 +353,20 @@ def registrar_transaccion():
     else:
         return jsonify({'error': 'Tipo de transacción inválido'}), 400
 
-    # Crear registro de la transacción
-    transaccion = Transaccion(
-        familia_id=familia_id,
-        puntos=puntos,
-        tipo=tipo,
-        descripcion=descripcion,
-        fecha=datetime.utcnow()
-    )
-    db.session.add(transaccion)
-    db.session.commit()
+    # --- AGREGAR REGISTRO DE HISTORIAL ---
+    hora_mexico = datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
+    nueva_transaccion = Transaccion(
+    familia_id=familia_id,
+    tipo=tipo,
+    puntos=puntos if tipo == 'suma' else -puntos,
+    descripcion=descripcion,
+    fecha=hora_mexico
+)
 
-    return jsonify({'mensaje': 'Transacción registrada exitosamente'})
+    db.session.add(nueva_transaccion)
+
+    db.session.commit()
+    return jsonify({'mensaje': 'Transacción registrada con éxito', 'puntos_restantes': familia.puntos}), 200
 
 
 
@@ -454,7 +459,6 @@ def registrar_transaccion_web(familia_id):
         return jsonify({"error": "Puntos inválidos"}), 400
 
     descripcion = data.get("descripcion")
-
     familia = Familia.query.get(familia_id)
     if not familia:
         return jsonify({"error": "Familia no encontrada"}), 404
@@ -467,19 +471,23 @@ def registrar_transaccion_web(familia_id):
 
     puntos_finales = puntos if tipo == 'suma' else -abs(puntos)
 
+    hora_mexico = datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
     transaccion = Transaccion(
-        familia_id=familia_id,
-        tipo=tipo,
-        puntos=puntos_finales,
-        descripcion=descripcion,
-        fecha=datetime.utcnow() - timedelta(hours=6)
-    )
+    familia_id=familia_id,
+    tipo=tipo,
+    puntos=puntos_finales,
+    descripcion=descripcion,
+    fecha=hora_mexico
+)
 
+    # **Este es el punto clave: ACTUALIZA EL CAMPO DE PUNTOS**
     familia.puntos += puntos_finales
+
     db.session.add(transaccion)
     db.session.commit()
 
-    return jsonify({"mensaje": "Transacción registrada correctamente"}), 200
+    return jsonify({"mensaje": "Transacción registrada con éxito"})
+
 
 
 
@@ -527,7 +535,7 @@ def crear_admin():
     if request.method == 'POST':
         usuario = request.form.get('usuario')
         password = request.form.get('password')
-        rol = request.form.get('rol')  # nuevo campo rol
+        rol = request.form.get('rol')
 
         if not usuario or not password or not rol:
             flash("Todos los campos son obligatorios", "error")
@@ -538,26 +546,16 @@ def crear_admin():
             return render_template("crear_admin.html")
 
         nuevo_admin = Admin(usuario=usuario, rol=rol)
-        nuevo_admin.set_password(password)
+        nuevo_admin.set_password(password)  # ← Usa el método para guardar el hash
+
         db.session.add(nuevo_admin)
         db.session.commit()
-        
-        # 👤 Admin creado
-        entry = LogEntry(
-            timestamp=datetime.utcnow(),
-            user=session.get("nombre_usuario"),
-            role=session.get("rol"),
-            action="crear",
-            entity="Administrador",
-            details=f"id={nuevo.id}, usuario={nuevo.usuario}"
-        )
-        db.session.add(entry)
-        db.session.commit()
 
-        flash("Administrador creado correctamente", "success")
+        flash("Usuario creado con éxito", "success")
         return redirect(url_for('crear_admin'))
 
     return render_template("crear_admin.html")
+
 
 
 @app.route('/admin/usuarios')
@@ -659,6 +657,8 @@ def perfil_familia(familia_id):
         return "Familia no encontrada", 404
 
     transacciones = Transaccion.query.filter_by(familia_id=familia_id).order_by(Transaccion.fecha.desc()).all()
+    print("TRANSACCIONES ENCONTRADAS:", transacciones)  # <--- AQUÍ
+    
     beneficios = Beneficio.query.all()
     ultimo_evento = EventoQR.query.order_by(EventoQR.id.desc()).first()  # 🔹 nuevo
     rol = session.get('rol')  # <--- obtener rol de sesión
@@ -996,7 +996,7 @@ def registrar_asistencia_evento():
         tipo='suma',
         puntos=evento.puntos,
         descripcion=f"Asistencia al evento: {evento.nombre_evento}",
-        fecha=datetime.utcnow() - timedelta(hours=6)
+        fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None) - timedelta(hours=6)
     )
     db.session.add(transaccion)
     db.session.commit()
@@ -1006,58 +1006,58 @@ def registrar_asistencia_evento():
 
 from app.models import LugarFrecuente  # asegúrate de importarlo
 
+from flask import request, render_template, redirect, url_for, flash, session, jsonify
+from datetime import datetime
+import pytz, os, qrcode
+from geopy.distance import geodesic
+
+from app import app, db
+from app.models import EventoQR, EventoQRRegistro, Transaccion, LugarFrecuente, Familia
+
+# --- Crear nuevo evento con QR ---
 @app.route('/admin/crear_qr_evento', methods=['GET', 'POST'])
 @requiere_rol('admin')
 def crear_qr_evento():
-    if 'admin_id' not in session:
-        return redirect(url_for('login'))
-
     lugares = LugarFrecuente.query.all()
     eventos = EventoQR.query.order_by(EventoQR.id.desc()).all()
 
     if request.method == 'POST':
         nombre_evento = request.form['nombre_evento']
-        puntos = int(request.form['puntos'])
-        latitud = float(request.form['latitud'])
-        longitud = float(request.form['longitud'])
+        puntos        = int(request.form['puntos'])
+        latitud       = float(request.form['latitud'])
+        longitud      = float(request.form['longitud'])
+        requiere_ubic = 'requiere_ubic' in request.form
+        valid_from    = request.form.get('valid_from')
+        valid_to      = request.form.get('valid_to')
 
         evento = EventoQR(
             nombre_evento=nombre_evento,
             puntos=puntos,
             latitud=latitud,
-            longitud=longitud
+            longitud=longitud,
+            requiere_ubic=requiere_ubic,
+            valid_from=datetime.strptime(valid_from, '%Y-%m-%dT%H:%M') if valid_from else None,
+            valid_to=datetime.strptime(valid_to, '%Y-%m-%dT%H:%M')   if valid_to   else None
         )
-
         db.session.add(evento)
-        db.session.flush()  # Para obtener el ID sin hacer commit
+        db.session.flush()  # para obtener evento.id sin commit
 
-        qr_data = url_for('escanear_evento_con_ubicacion', evento_id=evento.id, _external=True)
-        qr_img = qrcode.make(qr_data)
-
-        qr_filename = f"evento_{evento.id}.png"
-        qr_path = os.path.join('app', 'static', 'qr_eventos', qr_filename)
+        # Generar imagen QR
+        qr_url   = url_for('escanear_evento_con_ubicacion', evento_id=evento.id, _external=True)
+        qr_img   = qrcode.make(qr_url)
+        qr_fname = f"evento_{evento.id}.png"
+        qr_path  = os.path.join(app.root_path, 'static', 'qr_eventos', qr_fname)
         os.makedirs(os.path.dirname(qr_path), exist_ok=True)
         qr_img.save(qr_path)
 
-        evento.qr_filename = qr_filename
-        db.session.commit()
-        
-        # 🎯 Evento creado
-        entry = LogEntry(
-            timestamp=datetime.utcnow(),
-            user=session.get("nombre_usuario"),
-            role=session.get("rol"),
-            action="crear",
-            entity="Evento",
-            details=f"id={evento.id}, nombre={evento.nombre_evento}"
-        )
-        db.session.add(entry)
+        evento.qr_filename = qr_fname
         db.session.commit()
 
-        flash('Evento QR creado con éxito.', 'success')
+        flash('🎯 Evento QR creado con éxito.', 'success')
         return redirect(url_for('crear_qr_evento'))
 
     return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
+
 
 
 
@@ -1069,34 +1069,63 @@ def escanear_evento_con_ubicacion(evento_id):
 from geopy.distance import geodesic
 
 
-@app.route('/validar_ubicacion_evento', methods=["POST"])
+from datetime import datetime
+import pytz
+from geopy.distance import geodesic
+from flask import request, jsonify, url_for
+
+# … tus imports y decoradores …
+
+@app.route('/validar_ubicacion_evento', methods=['POST'])
 def validar_ubicacion_evento():
-    print("🔍 Recibiendo petición de validación de ubicación")
-    data = request.get_json()
-    lat = data.get("lat")
-    lon = data.get("lon")
-    evento_id = data.get("evento_id")
+    data       = request.get_json()
+    lat        = data.get("lat")
+    lon        = data.get("lon")
+    evento_id  = data.get("evento_id")
     familia_id = session.get("familia_id")
 
-    if not lat or not lon or not familia_id:
-        return jsonify({"error": "Faltan datos o no estás logueado"}), 400
+    if not evento_id or not familia_id:
+        return jsonify({"error": "Datos incompletos"}), 400
 
-    evento = EventoQR.query.get(evento_id)
+    evento  = EventoQR.query.get(evento_id)
     familia = Familia.query.get(familia_id)
-
     if not evento or not familia:
-        return jsonify({"error": "Datos inválidos"}), 404
+        return jsonify({"error": "Evento o familia no encontrada"}), 404
 
-    distancia = geodesic((evento.latitud, evento.longitud), (lat, lon)).meters
-    print(f"📍 Distancia calculada: {distancia:.2f} metros")
+    # --- 1) Validación de rango de fecha/hora en hora local ---
+    tz         = pytz.timezone("America/Mexico_City")
+    ahora_local = datetime.now(tz)
 
-    if distancia > 500:
-        return jsonify({"redirect": url_for("ubicacion_invalida", evento_id=evento.id)})
+    if evento.valid_from:
+        vf_local = tz.localize(evento.valid_from)
+        if ahora_local < vf_local:
+            msg = vf_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento aún no está activo. Disponible desde {msg}",
+                "code": "fuera_de_fecha"
+            }), 400
 
-    ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
-    if ya_registrado:
+    if evento.valid_to:
+        vt_local = tz.localize(evento.valid_to)
+        if ahora_local > vt_local:
+            msg = vt_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento expiró. Válido hasta {msg}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # --- 2) Validación de ubicación ---
+    if evento.requiere_ubic:
+        distancia = geodesic((evento.latitud, evento.longitud),
+                            (float(lat), float(lon))).meters
+        if distancia > 500:
+            return jsonify({"redirect": url_for("ubicacion_invalida", evento_id=evento.id)})
+
+    # --- 3) Escaneo duplicado ---
+    if EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first():
         return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id, ya_asistio=1)})
 
+    # --- 4) Registro exitoso ---
     familia.puntos += evento.puntos
     db.session.add(EventoQRRegistro(familia_id=familia.id, evento_id=evento.id))
     db.session.add(Transaccion(
@@ -1189,38 +1218,90 @@ def escanear_evento_desde_familia():
         return redirect(url_for('login_familia'))
     return render_template('escanear_evento_desde_familia.html')
 
+
+from datetime import datetime
+import pytz
+from flask import request, jsonify, url_for, session
+from geopy.distance import geodesic
+from app import db
+from app.models import EventoQR, Familia, EventoQRRegistro, Transaccion
+
 @app.route('/validar_qr_evento', methods=["POST"])
 def validar_qr_evento():
-    data = request.get_json()
-    qr_url = data.get("qr_url")
+    data       = request.get_json()
+    evento_id  = data.get("evento_id")
+    lat        = data.get("lat")
+    lon        = data.get("lon")
     familia_id = session.get("familia_id")
 
-    if not qr_url or not familia_id:
+    # 0. Comprobación básica
+    if not evento_id or not familia_id:
         return jsonify({"error": "Faltan datos"}), 400
 
-    # Extraer evento_id desde la URL del QR
-    from urllib.parse import urlparse
-    import re
-
-    parsed_url = urlparse(qr_url)
-    match = re.search(r'/escanear_evento/(\d+)', parsed_url.path)
-
-    if not match:
-        return jsonify({"error": "No se pudo extraer el ID del evento"}), 400
-
-    evento_id = int(match.group(1))
-    evento = EventoQR.query.get(evento_id)
+    evento  = EventoQR.query.get(evento_id)
     familia = Familia.query.get(familia_id)
-
     if not evento or not familia:
         return jsonify({"error": "Evento o familia no encontrada"}), 404
 
-    ya_registrado = EventoQRRegistro.query.filter_by(evento_id=evento.id, familia_id=familia.id).first()
-    if ya_registrado:
-        return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id, ya_asistio=1)})
+    # 1. Fecha/hora actual en zona local
+    tz          = pytz.timezone("America/Mexico_City")
+    ahora_local = datetime.now(tz)
 
+    # valid_from
+    if evento.valid_from:
+        # asumimos que valid_from está guardado en UTC sin tzinfo
+        vf_utc   = evento.valid_from.replace(tzinfo=pytz.UTC)
+        vf_local = vf_utc.astimezone(tz)
+        if ahora_local < vf_local:
+            inicio = vf_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento aún no está activo. Desde {inicio}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # valid_to
+    if evento.valid_to:
+        vt_utc   = evento.valid_to.replace(tzinfo=pytz.UTC)
+        vt_local = vt_utc.astimezone(tz)
+        if ahora_local > vt_local:
+            fin = vt_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento expiró. Hasta {fin}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # 2. Validación de ubicación (solo si requiere_ubic=True)
+    if evento.requiere_ubic:
+        if lat is None or lon is None:
+            return jsonify({"error": "No se proporcionaron coordenadas"}), 400
+        distancia_m = geodesic(
+            (evento.latitud, evento.longitud),
+            (float(lat), float(lon))
+        ).meters
+        if distancia_m > 500:
+            return jsonify({
+                "redirect": url_for("ubicacion_invalida", evento_id=evento.id)
+            })
+
+    # 3. Checar duplicados
+    if EventoQRRegistro.query.filter_by(
+        evento_id=evento.id,
+        familia_id=familia.id
+    ).first():
+        return jsonify({
+            "redirect": url_for(
+                "asistencia_exitosa",
+                evento_id=evento.id,
+                ya_asistio=1
+            )
+        })
+
+    # 4. Registrar asistencia y sumar puntos
     familia.puntos += evento.puntos
-    db.session.add(EventoQRRegistro(familia_id=familia.id, evento_id=evento.id))
+    db.session.add(EventoQRRegistro(
+        familia_id=familia.id,
+        evento_id=evento.id
+    ))
     db.session.add(Transaccion(
         familia_id=familia.id,
         tipo='suma',
@@ -1229,7 +1310,11 @@ def validar_qr_evento():
     ))
     db.session.commit()
 
-    return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
+    return jsonify({
+        "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
+    })
+
+
 
 # Ruta en routes.py
 from flask import render_template, request, redirect, url_for, flash
@@ -1339,25 +1424,41 @@ def eliminar_eventos():
     flash('Eventos eliminados correctamente', 'success')
     return redirect(url_for('crear_qr_evento'))
 
+from flask import render_template, request, redirect, url_for, flash, session
+from app.models import EventoQR, LugarFrecuente, EventoQRRegistro, Transaccion
+from app import db
+from functools import wraps
+from datetime import datetime
+
+# ... tu decorador requiere_rol ...
+
 @app.route('/admin/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
 @requiere_rol('admin')
 def editar_evento(evento_id):
-    if 'admin_id' not in session:
-        return redirect(url_for('login'))
-
     evento = EventoQR.query.get_or_404(evento_id)
+    lugares = LugarFrecuente.query.all()   # <-- cargamos los lugares frecuentes
 
     if request.method == 'POST':
         evento.nombre_evento = request.form['nombre_evento']
-        evento.puntos = int(request.form['puntos'])
-        evento.latitud = float(request.form['latitud'])
-        evento.longitud = float(request.form['longitud'])
+        evento.puntos         = int(request.form['puntos'])
+        evento.latitud        = float(request.form['latitud'])
+        evento.longitud       = float(request.form['longitud'])
+        evento.requiere_ubic  = 'requiere_ubic' in request.form
+
+        valid_from = request.form.get('valid_from')
+        valid_to   = request.form.get('valid_to')
+
+        evento.valid_from = datetime.strptime(valid_from, '%Y-%m-%dT%H:%M') if valid_from else None
+        evento.valid_to   = datetime.strptime(valid_to,   '%Y-%m-%dT%H:%M') if valid_to   else None
 
         db.session.commit()
         flash('Evento actualizado correctamente.', 'success')
         return redirect(url_for('crear_qr_evento'))
 
-    return render_template('editar_evento.html', evento=evento)
+    return render_template('editar_evento.html', evento=evento, lugares=lugares)
+
+
+
 
 @app.route('/admin/editar_beneficio/<int:beneficio_id>', methods=['GET', 'POST'])
 def editar_beneficio(beneficio_id):
@@ -1587,7 +1688,7 @@ def puntos_masivos():
                     tipo=tipo,
                     puntos=puntos,
                     descripcion=descripcion,
-                    fecha=datetime.utcnow()
+                    fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
                 )
                 db.session.add(nueva_transaccion)
 
@@ -1721,3 +1822,35 @@ def log():
         e.local_ts = e.timestamp.replace(tzinfo=pytz.utc).astimezone(local_tz)
 
     return render_template("log.html", entries=entries)
+
+from datetime import datetime, timedelta, timezone
+
+@app.before_request
+def refrescar_timeout():
+    if "admin_id" in session:
+        # Creamos now como naive UTC
+        now = datetime.utcnow()
+        # Recuperamos el último timestamp (o now por defecto)
+        last = session.get("last_activity", now)
+
+        # Si last viene con tzinfo, lo convertimos a naive UTC
+        if hasattr(last, "tzinfo") and last.tzinfo is not None:
+            last = last.astimezone(timezone.utc).replace(tzinfo=None)
+
+        # Comparamos
+        if now - last > timedelta(minutes=30):  # tu inactividad límite
+            # registrar timeout en log
+            entry = LogEntry(
+                user=session.get("nombre_usuario"),
+                role=session.get("rol"),
+                action="timeout sesión",
+                entity="Admin",
+                details="Cierre de sesión por inactividad"
+            )
+            db.session.add(entry)
+            db.session.commit()
+            session.clear()
+            return redirect(url_for("login"))
+
+        # si no ha expirado, refrescamos la marca de actividad
+        session["last_activity"] = now

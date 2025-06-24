@@ -8,15 +8,13 @@
 <body>
     <h1>Crear nuevo administrador</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+{% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        <ul>
         {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
+            <div class="flash {{ category }}">{{ message }}</div>
         {% endfor %}
-        </ul>
     {% endif %}
-    {% endwith %}
+{% endwith %}
 
     <form method="POST">
         <label for="usuario">Usuario:</label>

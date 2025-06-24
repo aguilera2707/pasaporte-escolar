@@ -218,3 +218,12 @@ table.transactions td .btn-delete {
     background-color: #c0392b !important;
     color: #fff !important;
 }
+
+.success {
+    color: green;
+    font-weight: bold;
+}
+.error {
+    color: red;
+    font-weight: bold;
+}

@@ -35,9 +35,9 @@
     <h2>Tu código QR</h2>
     <div class="qr-wrapper">
         <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
-        <form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
+        <!--<form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
             <button class="btn-download" type="submit">📥 Descargar QR</button>
-        </form>
+        </form> -->
         <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
             <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
         </form>
@@ -85,7 +85,7 @@
                 <div class="transacciones-scroll">
                     {% for t in transacciones %}
                         <div class="transaccion-card">
-                            <p class="fecha">{{ t.fecha | localtime }}</p>
+                            <p class="fecha">{{ t.fecha.strftime('%d/%m/%Y %H:%M') }}</p>
                             <p class="detalle">
                                 <strong>
                                     {{ '✅ Ganaste' if t.tipo == 'suma' else '🔻 Canjeaste' }}
