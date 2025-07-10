@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = 'clave-super-secreta-123'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Tiempo máximo de sesión inactiva
-app.permanent_session_lifetime = timedelta(minutes=5)
+app.permanent_session_lifetime = timedelta(minutes=30)
 
 # Inicialización de extensiones
 db = SQLAlchemy(app)

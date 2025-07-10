@@ -6,6 +6,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
 </head>
 <body>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="mensajes-flash">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    
     <h2>Crear QR para Evento</h2>
     <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
 

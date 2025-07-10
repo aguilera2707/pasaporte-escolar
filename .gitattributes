@@ -1,0 +1,6 @@
+# Normaliza los saltos de línea para CSS, HTML, JS, etc.
+*.css text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.py text eol=lf
+*.md text eol=lf

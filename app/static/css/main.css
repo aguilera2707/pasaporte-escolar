@@ -1,28 +1,46 @@
+:root {
+    --rojo-fondo: #af1c1c;
+    --rojo-profundo: #850f0f;
+    --amarillo-ima: #e9b800;
+    --amarillo-hover: #ffd93b;
+    --blanco: #fffdfa;
+    --gris-borde: #e4e4e4;
+    --sombra: 0 6px 22px rgba(120, 15, 15, 0.18);
+    --negro: #1a1a1a;
+}
+
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    padding: 2rem;
-    text-align: center;
-    background: radial-gradient(ellipse at center, #af1c1c 0%, #850f0f 100%);
+    background: radial-gradient(ellipse at center, var(--rojo-fondo) 0%, var(--rojo-profundo) 100%);
     min-height: 100vh;
     margin: 0;
+    padding: 2rem;
+    text-align: center;
 }
+
+/* Contenedores generales */
 .contenedor {
-    background: white;
+    background: var(--blanco);
     padding: 2.5rem 2rem;
     border-radius: 18px;
     max-width: 420px;
     margin: 4rem auto;
-    box-shadow: 0 6px 22px rgba(120, 15, 15, 0.18);
-    border: 3px solid #e9b800;
+    box-shadow: var(--sombra);
+    border: 3px solid var(--amarillo-ima);
+    z-index: 2;
+    position: relative;
 }
-h1 {
-    color: #e9b800;
+
+h1, h2, h3 {
+    color: var(--amarillo-ima);
     font-size: 2.2rem;
     margin-bottom: 1.5rem;
     font-weight: bold;
     letter-spacing: 1px;
     text-shadow: 1px 2px 0 #850f0f30;
 }
+
+/* Tabs */
 .tabs {
     display: flex;
     justify-content: center;
@@ -32,8 +50,8 @@ h1 {
 .tabs button {
     padding: 10px 28px;
     border: none;
-    background: #e9b800;
-    color: #850f0f;
+    background: var(--amarillo-ima);
+    color: var(--rojo-profundo);
     font-weight: bold;
     border-radius: 7px;
     font-size: 1.1rem;
@@ -42,27 +60,37 @@ h1 {
     transition: background 0.25s, color 0.25s;
 }
 .tabs button.active, .tabs button:hover {
-    background: #850f0f;
+    background: var(--rojo-profundo);
     color: #fff6cc;
 }
+
+/* Formularios */
 form {
     margin-top: 1rem;
 }
-input {
+input, select {
     display: block;
     margin: 13px auto;
     padding: 12px 10px;
     width: 90%;
     max-width: 300px;
     font-size: 1rem;
-    border: 1px solid #e9b800;
+    border: 1.5px solid var(--amarillo-ima);
     border-radius: 6px;
-    background: #fffdfa;
-    color: #850f0f;
+    background: var(--blanco);
+    color: var(--rojo-profundo);
+    outline: none;
+    box-sizing: border-box;
 }
-button[type="submit"] {
-    background-color: #e9b800;
-    color: #850f0f;
+input:focus, select:focus {
+    border-color: var(--rojo-profundo);
+    background: #fffbe0;
+}
+
+/* Botones */
+button[type="submit"], .btn, .btn-primary {
+    background-color: var(--amarillo-ima);
+    color: var(--rojo-profundo);
     padding: 12px 25px;
     border: none;
     border-radius: 7px;
@@ -72,11 +100,14 @@ button[type="submit"] {
     margin-top: 10px;
     box-shadow: 0 2px 8px #850f0f12;
     transition: background 0.2s, color 0.2s;
+    margin-bottom: 0.5em;
 }
-button[type="submit"]:hover {
-    background: #850f0f;
+button[type="submit"]:hover, .btn:hover, .btn-primary:hover {
+    background: var(--rojo-profundo);
     color: #fff6cc;
 }
+
+/* Mensajes */
 .error, .danger {
     color: #c0392b;
     background: #ffd6d6;
@@ -91,23 +122,61 @@ button[type="submit"]:hover {
     padding: 0.8em;
     margin: 1em 0 0.5em 0;
 }
-@media (max-width: 480px) {
-    body {
-        padding: 0.5rem;
-    }
-    .contenedor {
-        padding: 1rem;
-        width: 100%;
-        box-shadow: none;
-        border-radius: 0;
-    }
-    input {
-        width: 100%;
-    }
-    .tabs {
-        flex-direction: column;
-    }
-    .tabs button {
-        width: 100%;
-    }
+
+/* Tablas */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fffdfa;
+    margin: 2em 0;
+}
+th, td {
+    border: 1px solid var(--gris-borde);
+    padding: 0.9em 0.6em;
+    text-align: left;
+    color: var(--negro);
+}
+th {
+    background: var(--amarillo-ima);
+    color: var(--rojo-profundo);
+    font-weight: bold;
+}
+tr:nth-child(even) {
+    background: #fffbe0;
+}
+
+/* Otros */
+a, .link {
+    color: var(--rojo-profundo);
+    text-decoration: underline;
+    transition: color 0.18s;
+}
+a:hover, .link:hover { color: var(--amarillo-ima); }
+
+.btn-danger {
+    background: #c0392b !important;
+    color: #fff !important;
+}
+.btn-danger:hover { background: #7c1812 !important; }
+
+.label-puntos, .badge-puntos {
+    background: var(--amarillo-ima);
+    color: var(--rojo-profundo);
+    padding: 0.18em 0.7em;
+    border-radius: 12px;
+    font-weight: bold;
+    margin-left: 0.6em;
+}
+
+::-webkit-scrollbar-thumb { background: #c0392b35; border-radius: 10px; }
+::-webkit-scrollbar-track { background: #fffdfa; }
+
+/* Responsive */
+@media (max-width: 880px) {
+    .contenedor { margin: 1rem auto; }
+}
+@media (max-width: 600px) {
+    body { padding: 0.4rem; }
+    .contenedor { padding: 1rem; border-radius: 6px; max-width: 99vw; }
+    input, select { width: 100%; }
 }

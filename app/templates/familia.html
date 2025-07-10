@@ -6,15 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div id="mensajes-flash">
-            {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    {% endwith %}
+
 
     <h1>Familia: {{ familia.nombre }}</h1>
     <p>Puntos actuales: <strong>{{ familia.puntos }}</strong></p>
