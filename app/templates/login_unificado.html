@@ -2,75 +2,45 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <title>Acceso a la Cuponera</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-
-<div class="contenedor">
-    <div class="tabs">
-
-        <button id="btn-familia" class="active" onclick="mostrarFormulario('familia')">Familia</button>
-        <button id="btn-admin"  onclick="mostrarFormulario('admin')">Administrador</button>
-        
+    <div class="contenedor">
+        <h1>Acceso a la Cuponera</h1>
+        <div class="tabs">
+            <button type="button" id="tab-familia" class="active" onclick="mostrarTab('familia')">Familia</button>
+            <button type="button" id="tab-admin" onclick="mostrarTab('admin')">Administrador</button>
+        </div>
+        <form id="form-familia" method="POST" action="{{ url_for('login_familia') }}">
+            <input type="email" name="correo" placeholder="Correo electrónico" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+        <form id="form-admin" method="POST" action="{{ url_for('login') }}" style="display:none;">
+            <input type="text" name="usuario" placeholder="Usuario" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="mensajes">
+                    {% for category, message in messages %}
+                        <div class="{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
     </div>
-
-    <!-- Formulario de familia -->
-    <form id="form-familia" onsubmit="return validarFamilia()" method="POST" action="{{ url_for('login_familia') }}" >
-        <input type="email" name="correo" id="correo-familia" placeholder="Correo de familia" required>
-        <input type="password" name="password" id="pass-familia" placeholder="Contraseña" required>
-        <button type="submit">Ingresar</button>
-    </form>
-
-    <!-- Formulario de administrador -->
-    <form id="form-admin" method="POST" action="{{ url_for('login') }}" style="display:none;">
-        <input type="text" name="usuario" placeholder="Usuario admin" required>
-        <input type="password" name="password" placeholder="Contraseña" required>
-        <button type="submit">Ingresar</button>
-    </form>
-
-
-    <!-- Mensajes de error con flash -->
-    {% with messages = get_flashed_messages(category_filter=["error"]) %}
-    {% if messages %}
-        <div class="error">{{ messages[0] }}</div>
-    {% endif %}
-    {% endwith %}
-</div>
-
-<script>
-    function mostrarFormulario(tipo) {
-        document.getElementById('form-admin').style.display = tipo === 'admin' ? 'block' : 'none';
-        document.getElementById('form-familia').style.display = tipo === 'familia' ? 'block' : 'none';
-
-        document.getElementById('btn-admin').classList.toggle('active', tipo === 'admin');
-        document.getElementById('btn-familia').classList.toggle('active', tipo === 'familia');
-    }
-
-    function validarFamilia() {
-        const correo = document.getElementById('correo-familia').value.trim();
-        const pass = document.getElementById('pass-familia').value.trim();
-
-        if (!correo.includes('@')) {
-            alert("Por favor, ingresa un correo válido.");
-            return false;
+    <script>
+        function mostrarTab(tab) {
+            document.getElementById('form-familia').style.display = tab === 'familia' ? 'block' : 'none';
+            document.getElementById('form-admin').style.display = tab === 'admin' ? 'block' : 'none';
+            document.getElementById('tab-familia').classList.toggle('active', tab === 'familia');
+            document.getElementById('tab-admin').classList.toggle('active', tab === 'admin');
         }
-
-        if (pass.length < 4) {
-            alert("La contraseña debe tener al menos 4 caracteres.");
-            return false;
-        }
-
-        return true;
-    }
-
-    {% if active_tab %}
-    window.onload = function () {
-        mostrarFormulario("{{ active_tab }}");
-    };
-    {% endif %}
-</script>
-
+        // Para que siempre inicie en el tab de familia:
+        document.addEventListener("DOMContentLoaded", function() { mostrarTab('familia'); });
+    </script>
 </body>
 </html>

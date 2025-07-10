@@ -1,0 +1,113 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 2rem;
+    text-align: center;
+    background: radial-gradient(ellipse at center, #af1c1c 0%, #850f0f 100%);
+    min-height: 100vh;
+    margin: 0;
+}
+.contenedor {
+    background: white;
+    padding: 2.5rem 2rem;
+    border-radius: 18px;
+    max-width: 420px;
+    margin: 4rem auto;
+    box-shadow: 0 6px 22px rgba(120, 15, 15, 0.18);
+    border: 3px solid #e9b800;
+}
+h1 {
+    color: #e9b800;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 1px 2px 0 #850f0f30;
+}
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+.tabs button {
+    padding: 10px 28px;
+    border: none;
+    background: #e9b800;
+    color: #850f0f;
+    font-weight: bold;
+    border-radius: 7px;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 4px #850f0f10;
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+}
+.tabs button.active, .tabs button:hover {
+    background: #850f0f;
+    color: #fff6cc;
+}
+form {
+    margin-top: 1rem;
+}
+input {
+    display: block;
+    margin: 13px auto;
+    padding: 12px 10px;
+    width: 90%;
+    max-width: 300px;
+    font-size: 1rem;
+    border: 1px solid #e9b800;
+    border-radius: 6px;
+    background: #fffdfa;
+    color: #850f0f;
+}
+button[type="submit"] {
+    background-color: #e9b800;
+    color: #850f0f;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 1.08rem;
+    font-weight: bold;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px #850f0f12;
+    transition: background 0.2s, color 0.2s;
+}
+button[type="submit"]:hover {
+    background: #850f0f;
+    color: #fff6cc;
+}
+.error, .danger {
+    color: #c0392b;
+    background: #ffd6d6;
+    border-radius: 6px;
+    padding: 0.8em;
+    margin: 1em 0 0.5em 0;
+}
+.success {
+    color: #fff;
+    background: #2ecc71;
+    border-radius: 6px;
+    padding: 0.8em;
+    margin: 1em 0 0.5em 0;
+}
+@media (max-width: 480px) {
+    body {
+        padding: 0.5rem;
+    }
+    .contenedor {
+        padding: 1rem;
+        width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+    }
+    input {
+        width: 100%;
+    }
+    .tabs {
+        flex-direction: column;
+    }
+    .tabs button {
+        width: 100%;
+    }
+}
