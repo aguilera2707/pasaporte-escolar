@@ -33,18 +33,32 @@ body {
     justify-content: flex-end;
     align-items: center;
     gap: 1.3em;
-    margin-bottom: 0.9em;
     font-size: 1.08rem;
+    background: rgba(255,255,255,0.68);
+    box-shadow: 0 2px 7px #e9b80018;
+    border-radius: 13px;
+    padding: 0.7em 1.8em 0.7em 1.3em;
+    margin-bottom: 2.1em;    /* AUMENTADO: separa la navbar */
+}
+
+.admin-userbar span {
+    color: #502b74;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
 }
 .admin-userbar a {
     color: #e74c3c;
     background: #fff8;
-    padding: 0.3em 1em;
-    border-radius: 6px;
+    padding: 0.33em 1.1em;
+    border-radius: 7px;
     font-weight: bold;
     text-decoration: none;
-    margin-left: 1em;
+    margin-left: 1.5em;
     transition: background 0.2s, color 0.2s;
+    font-size: 1.07em;
+    border: none;
 }
 .admin-userbar a:hover {
     background: #e9b800;
@@ -55,7 +69,8 @@ body {
 .admin-navbar {
     background: rgba(172, 70, 70, 0.95);
     border-radius: 12px;
-    margin-bottom: 2rem;
+    margin-bottom: 2.3rem;
+    margin-top: 0.2em;
     padding: 1rem 1.2rem;
     box-shadow: 0 3px 14px #ae1e1a22;
 }
@@ -65,8 +80,11 @@ body {
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.7rem 1rem;
+    gap: 1.1rem 1.3rem;
     justify-content: center;
+}
+.admin-navbar ul li {
+    display: flex;
 }
 .admin-navbar ul li a {
     background: #e9b800;
@@ -75,11 +93,13 @@ body {
     border-radius: 8px;
     font-weight: bold;
     transition: background 0.2s, color 0.2s, transform 0.12s;
-    font-size: 1rem;
+    font-size: 1.04rem;
     text-shadow: 0 1px 0 #fff8;
     box-shadow: 0 2px 4px #850f0f10;
     letter-spacing: 0.04em;
     text-decoration: none;
+    display: flex;
+    align-items: center;
 }
 .admin-navbar ul li a:hover {
     background: #850f0f;
@@ -244,10 +264,15 @@ button:hover, .btn-primary:hover {
     h1 { font-size: 1.25rem; }
     th, td { font-size: 0.99rem; }
 }
+@media (max-width: 900px) {
+    .admin-navbar ul { flex-wrap: wrap; gap: 0.7em; }
+    .admin-navbar { padding: 0.8rem 0.5rem; }
+}
 @media (max-width: 768px) {
     .admin-navbar ul { flex-direction: column; gap: 0.5em;}
     .admin-contenedor { border-radius: 6px; }
-    .admin-userbar { flex-direction: column; align-items: flex-end; gap: 0.4em;}
+    .admin-userbar { flex-direction: column; align-items: flex-end; gap: 0.7em; padding: 0.6em 0.8em;}
+    .admin-navbar { margin-bottom: 1.3rem;}
 }
 @media (max-width: 600px) {
     body { padding: 0.2rem;}
