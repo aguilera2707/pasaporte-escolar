@@ -6,7 +6,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
 </head>
 <body>
-
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div id="mensajes-flash">
@@ -15,82 +16,94 @@
             {% endfor %}
         </div>
         {% endif %}
-    {% endwith %}
+        {% endwith %}
 
-    
-    <h2>Crear QR para Evento</h2>
-    <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-bottom: 1.6em;">← Volver al panel</a>
 
-    <form method="POST">
-    <label>Nombre del evento:</label>
-    <input type="text" name="nombre_evento" required>
+        <h1>Crear QR para Evento</h1>
 
-    <label>Puntos a otorgar:</label>
-    <input type="number" name="puntos" min="1" required>
+        <form method="POST" class="qr-evento-form">
+            <label>Nombre del evento:</label>
+            <input type="text" name="nombre_evento" required>
 
-    <label><input type="checkbox" name="requiere_ubic" checked> Restringir por ubicación (radio 500 m)</label>
+            <label>Puntos a otorgar:</label>
+            <input type="number" name="puntos" min="1" required>
 
-    <label>Válido desde:</label>
-    <input type="datetime-local" name="valid_from">
+            <label><input type="checkbox" name="requiere_ubic" checked> Restringir por ubicación (radio 500 m)</label>
 
-    <label>Válido hasta:</label>
-    <input type="datetime-local" name="valid_to">
+            <label>Válido desde:</label>
+            <input type="datetime-local" name="valid_from">
 
-    <label>Lugar frecuente:</label>
-    <select id="lugar_frecuente" onchange="llenarCoordenadas()">
-        <option value="">-- Seleccionar --</option>
-        {% for lugar in lugares %}
-        <option value="{{ lugar.latitud }},{{ lugar.longitud }}">{{ lugar.nombre }}</option>
-        {% endfor %}
-    </select>
+            <label>Válido hasta:</label>
+            <input type="datetime-local" name="valid_to">
 
-    <label>Latitud:</label>
-    <input type="text" name="latitud" id="latitud" required>
+            <label>Lugar frecuente:</label>
+            <select id="lugar_frecuente" onchange="llenarCoordenadas()">
+                <option value="">-- Seleccionar --</option>
+                {% for lugar in lugares %}
+                <option value="{{ lugar.latitud }},{{ lugar.longitud }}">{{ lugar.nombre }}</option>
+                {% endfor %}
+            </select>
 
-    <label>Longitud:</label>
-    <input type="text" name="longitud" id="longitud" required>
+            <label>Latitud:</label>
+            <input type="text" name="latitud" id="latitud" required>
 
-    <button type="submit">🎯 Generar QR</button>
-    </form>
+            <label>Longitud:</label>
+            <input type="text" name="longitud" id="longitud" required>
 
-    <h2>Eventos existentes</h2>
-    <table id="tabla-eventos">
-    <thead>
-        <tr>
-        <th>Nombre</th><th>Puntos</th><th>Validez</th><th>Ubicación</th><th>QR</th><th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for e in eventos %}
-        <tr>
-        <td>{{ e.nombre_evento }}</td>
-        <td>{{ e.puntos }}</td>
-        <td>
-            {% if e.valid_from %}desde {{ e.valid_from.strftime('%d/%m %H:%M') }}{% endif %}
-            {% if e.valid_to %} hasta {{ e.valid_to.strftime('%d/%m %H:%M') }}{% endif %}
-        </td>
-        <td>{{ 'Sí' if e.requiere_ubic else 'No' }}</td>
-        <td>
-        <a href="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
-            target="_blank" title="Ver QR a tamaño real">
-            <img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
-            width="40" style="cursor:pointer;">
-        </a>
-</td>
-        <td>
-            <a href="{{ url_for('editar_evento', evento_id=e.id) }}">Editar</a>
-        </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-    </table>
+            <button type="submit" class="btn btn-primary">🎯 Generar QR</button>
+        </form>
 
+        <h2 style="margin-top:2.4em;">Eventos existentes</h2>
+        <div class="table-responsive">
+            <table id="tabla-eventos">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Puntos</th>
+                        <th>Validez</th>
+                        <th>Ubicación</th>
+                        <th>QR</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in eventos %}
+                    <tr>
+                        <td>{{ e.nombre_evento }}</td>
+                        <td>{{ e.puntos }}</td>
+                        <td>
+                            {% if e.valid_from %}desde {{ e.valid_from.strftime('%d/%m %H:%M') }}{% endif %}
+                            {% if e.valid_to %} hasta {{ e.valid_to.strftime('%d/%m %H:%M') }}{% endif %}
+                        </td>
+                        <td>{{ 'Sí' if e.requiere_ubic else 'No' }}</td>
+                        <td>
+                            <a href="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
+                                target="_blank" title="Ver QR a tamaño real">
+                                <img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
+                                    width="44" style="cursor:pointer;">
+                            </a>
+                        </td>
+                        <td class="acciones">
+                            <a href="{{ url_for('editar_evento', evento_id=e.id) }}">✏️ Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     <script>
     function llenarCoordenadas() {
         const [lat, lon] = document.getElementById('lugar_frecuente').value.split(',');
         document.getElementById('latitud').value  = lat||'';
         document.getElementById('longitud').value = lon||'';
     }
+    setTimeout(() => {
+        const div = document.getElementById('mensajes-flash');
+        if (div) div.style.display = 'none';
+    }, 4000);
     </script>
 </body>
+
 </html>

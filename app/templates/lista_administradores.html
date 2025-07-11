@@ -2,86 +2,80 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Administradores</title>
+    <title>Lista de Administradores</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <body>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor" style="max-width:1100px;">
+        <h1>Lista de Administradores</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div style="background:yellow; color:red; font-size:2em;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="mensajes-flash">
             {% for category, message in messages %}
-                <p class="{{ category }}">{{ message }}</p>
+                <div class="flash {{ category }}">{{ message }}</div>
             {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <div style="margin-bottom:1.7em;">
+            <a href="{{ url_for('crear_admin') }}" class="btn btn-primary">➕ Crear nuevo administrador</a>
         </div>
-    {% endif %}
-    {% endwith %}
-    <h1>Lista de Administradores</h1>
 
-    <p>
-        <a href="{{ url_for('crear_admin') }}" class="btn btn-primary">➕ Crear nuevo administrador</a>
-    </p>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div id="mensaje">
-            {% for category, message in messages %}
-                <p class="{{ category }}">{{ message }}</p>
-            {% endfor %}
+        <div class="table-responsive">
+            <table id="tabla-admins">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in administradores %}
+                    <tr>
+                        <td>{{ admin.id }}</td>
+                        <td>{{ admin.usuario }}</td>
+                        <td>{{ admin.rol }}</td>
+                        <td>
+                            <form action="{{ url_for('eliminar_administrador', admin_id=admin.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este administrador?');">
+                                    🗑 Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    {% endif %}
-    {% endwith %}
-
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for admin in administradores %}
-            <tr>
-                <td>{{ admin.id }}</td>
-                <td>{{ admin.usuario }}</td>
-                <td>{{ admin.rol }}</td>
-                <td>
-                    <form action="{{ url_for('eliminar_administrador', admin_id=admin.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este administrador?');">
-                            🗑 Eliminar
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <p><a href="{{ url_for('panel_admin') }}">← Volver al panel</a></p>
-
-
-    
+        <a href="{{ url_for('panel_admin') }}" class="btn-volver" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
+    </div>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#tabla-admins').DataTable({
-        language: {
-            search: "🔍 Buscar:",
-            lengthMenu: "Mostrar _MENU_ registros",
-            info: "Mostrando _START_ a _END_ de _TOTAL_ administradores",
-            paginate: {
-            previous: "←",
-            next: "→"
-            },
-            zeroRecords: "No se encontraron coincidencias"
-        },
-        pageLength: 10,
-        lengthMenu: [5, 10, 20, 50]
+        $(document).ready(function() {
+            $('#tabla-admins').DataTable({
+                language: {
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ administradores",
+                    paginate: { previous: "←", next: "→" },
+                    zeroRecords: "No se encontraron coincidencias"
+                },
+                pageLength: 10,
+                lengthMenu: [5, 10, 20, 50, 100]
+            });
         });
-    });
+
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
     </script>
 </body>
 </html>

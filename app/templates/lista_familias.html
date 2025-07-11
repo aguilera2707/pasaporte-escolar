@@ -7,58 +7,63 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <body>
-    <a href="{{ url_for('panel_admin') }}" class="btn-primary">← Volver al panel</a>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor">
+        <a href="{{ url_for('panel_admin') }}" class="btn btn-primary" style="margin-bottom:1.4em;">← Volver al panel</a>
 
-    <h1>Lista de Familias</h1>
+        <h1>Lista de Familias</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div id="mensajes-flash">
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-        </div>
-    {% endif %}
-    {% endwith %}
-
-    <h2>Registrar nueva familia</h2>
-    <form method="POST" action="{{ url_for('lista_familias') }}">
-        <input type="text" name="nombre" placeholder="Nombre" required>
-        <input type="email" name="correo" placeholder="Correo" required>
-        <input type="password" name="password" placeholder="Contraseña" required>
-        <button type="submit">Registrar</button>
-    </form>
-
-    <h2>Familias registradas</h2>
-    <table id="tabla-familias" class="display">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Contraseña</th>
-                <th>Puntos</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for f in familias %}
-            <tr>
-                <td>{{ f.id }}</td>
-                <td>{{ f.nombre }}</td>
-                <td>{{ f.correo }}</td>
-                <td>{{ f.password }}</td>
-                <td>{{ f.puntos }}</td>
-                <td>
-                    <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a> |
-                    <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a> |
-                    <button onclick="sumar({{ f.id }})">➕</button>
-                    <button onclick="canjear({{ f.id }})">➖</button>
-                </td>
-            </tr>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="mensajes-flash">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
             {% endfor %}
-        </tbody>
-    </table>
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <h2>Registrar nueva familia</h2>
+        <form method="POST" action="{{ url_for('lista_familias') }}" class="familia-form">
+            <input type="text" name="nombre" placeholder="Nombre" required>
+            <input type="email" name="correo" placeholder="Correo" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit" class="btn btn-primary">Registrar</button>
+        </form>
+
+        <h2>Familias registradas</h2>
+        <div class="table-responsive">
+            <table id="tabla-familias" class="display">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Contraseña</th>
+                        <th>Puntos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in familias %}
+                    <tr>
+                        <td>{{ f.id }}</td>
+                        <td>{{ f.nombre }}</td>
+                        <td>{{ f.correo }}</td>
+                        <td>{{ f.password }}</td>
+                        <td>{{ f.puntos }}</td>
+                        <td class="acciones">
+                            <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a>
+                            <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a>
+                            <button onclick="sumar({{ f.id }})" class="sumar" title="Sumar puntos">➕</button>
+                            <button onclick="canjear({{ f.id }})" class="canjear" title="Canjear puntos">➖</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div> <!-- admin-contenedor -->
 
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -148,4 +153,3 @@
         }, 4000);
     </script>
 </body>
-</html>

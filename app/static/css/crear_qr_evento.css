@@ -1,145 +1,176 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f7f9fc;
-    padding: 2rem;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: radial-gradient(ellipse at center, #af1c1c 0%, #850f0f 100%);
     margin: 0;
-    color: #2c3e50;
+    color: #222;
+    min-height: 100vh;
+}
+.admin-bg {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100vw; height: 100vh;
+    background: inherit;
+    z-index: 0;
+    pointer-events: none;
+}
+.admin-contenedor {
+    position: relative;
+    z-index: 5;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    border-radius: 22px;
+    box-shadow: 0 8px 32px 0 #ae1e1a44, 0 2px 8px #e9b80022;
+    max-width: 900px;
+    margin: 2.7rem auto 2.5rem auto;
+    padding: 2.5rem 2rem 2.5rem 2rem;
 }
 
-h2 {
-    color: #34495e;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
+/* Títulos */
+h1, h2 {
+    color: #e9b800;
+    font-weight: 700;
+    margin-bottom: 1.1em;
+    letter-spacing: 1px;
+    text-shadow: 1px 2px 0 #850f0f18;
 }
 
-form {
-    background-color: #fff;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-input[type="text"],
-input[type="number"],
-select {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0 15px 0;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 16px;
-}
-
-label {
+/* Botón volver y general */
+.btn-primary, .btn-volver {
+    background: #e9b800;
+    color: #850f0f;
     font-weight: bold;
-    display: block;
-    margin-top: 10px;
-}
-
-.form-footer {
-    text-align: right;
-}
-
-button[type="submit"],
-.btn-danger {
-    background-color: #3498db;
-    color: white;
-    padding: 10px 16px;
+    padding: 0.49em 1.22em;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #850f0f11;
     border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 15px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-.btn-danger {
-    background-color: #e74c3c;
-}
-
-button:hover {
-    opacity: 0.9;
-}
-
-a.btn-volver {
+    transition: background 0.19s, color 0.19s, transform 0.13s;
+    font-size: 1.04em;
+    margin-bottom: 1em;
     display: inline-block;
-    margin-bottom: 1rem;
-    text-decoration: none;
-    color: white;
-    background-color: #8e44ad;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-weight: bold;
+}
+.btn-primary:hover, .btn-volver:hover {
+    background: #850f0f;
+    color: #fff6cc;
+    transform: scale(1.06) translateY(-2px);
 }
 
-a.btn-volver:hover {
-    background-color: #732d91;
+/* Formulario QR Evento */
+.qr-evento-form {
+    background: #fffefa;
+    border-radius: 13px;
+    box-shadow: 0 4px 12px #e9b80011;
+    padding: 2em 1.5em 1.1em 1.5em;
+    margin-bottom: 2em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
 }
 
-table {
+.qr-evento-form label {
+    font-weight: 600;
+    margin: 0.45em 0 0.17em 0;
+    color: #850f0f;
+}
+.qr-evento-form input[type="text"],
+.qr-evento-form input[type="number"],
+.qr-evento-form input[type="datetime-local"],
+.qr-evento-form select {
     width: 100%;
-    border-collapse: collapse;
-    background-color: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+    padding: 11px 13px;
+    border-radius: 7px;
+    border: 1.3px solid #e9b800;
+    background: #fffdfa;
+    color: #850f0f;
+    font-size: 1em;
+    margin-bottom: 0.6em;
 }
-
-th, td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
+.qr-evento-form input:focus,
+.qr-evento-form select:focus {
+    border-color: #850f0f;
 }
-
-thead {
-    background-color: #ecf0f1;
-}
-
-img {
-    border-radius: 4px;
-}
-
-a {
-    color: #2980b9;
-    text-decoration: none;
+.qr-evento-form button[type="submit"] {
+    background: #e9b800;
+    color: #850f0f;
     font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    font-size: 1.1em;
+    padding: 0.62em 1.35em;
+    margin-top: 0.7em;
+    margin-bottom: 0.2em;
+    transition: background 0.16s, color 0.16s, transform 0.11s;
+}
+.qr-evento-form button[type="submit"]:hover {
+    background: #850f0f;
+    color: #fff6cc;
+    transform: scale(1.05) translateY(-2px);
 }
 
-a:hover {
-    text-decoration: underline;
+/* Tabla eventos */
+.table-responsive {
+    overflow-x: auto;
+}
+#tabla-eventos {
+    width: 100%;
+    background: #fffdfa;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px #e9b80011;
+    overflow: hidden;
+    margin-top: 1.3em;
+    margin-bottom: 1.2em;
+    border-collapse: collapse;
+}
+#tabla-eventos th {
+    background: #ffe48a;
+    color: #850f0f;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 13px 8px;
+}
+#tabla-eventos td {
+    background: #fffdfa;
+    color: #2c3e50;
+    padding: 13px 8px;
+}
+#tabla-eventos tr:hover td {
+    background: #fff6cc;
+}
+.acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    align-items: center;
+}
+
+/* Flash mensajes */
+.flash, #mensaje {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-weight: bold;
+    border: 1.5px solid #ffe58f;
+    background: #fffde4;
+    color: #555;
+}
+.flash.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1.2px solid #c3e6cb;
+}
+.flash.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1.2px solid #f5c6cb;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    form, table {
-        font-size: 15px;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select {
-        font-size: 15px;
-    }
-
-    button {
-        width: 100%;
-        margin-top: 10px;
-    }
-
-    .form-footer {
-        text-align: center;
-    }
+@media (max-width: 900px) {
+    .admin-contenedor { padding: 1.3rem 0.4rem; }
+    .qr-evento-form { padding: 1em 0.4em 1em 0.4em;}
+    #tabla-eventos th, #tabla-eventos td { font-size: 0.97em;}
 }
-/* Ícono automático para el botón de eliminar */
-.btn-danger::before {
-    content: "🗑️";
-    margin-right: 8px;
-}
-
-/* Ícono automático para enlaces de editar */
-a[href*="editar_evento"]::before {
-    content: "✏️";
-    margin-right: 6px;
+@media (max-width: 600px) {
+    .admin-contenedor { padding: 0.6rem 0.09rem;}
+    #tabla-eventos th, #tabla-eventos td { min-width: 100px; font-size: 0.93em;}
 }

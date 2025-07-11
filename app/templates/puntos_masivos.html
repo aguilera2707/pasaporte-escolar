@@ -7,58 +7,65 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 </head>
 <body>
-    <h1>Puntos Masivos</h1>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor">
+        <h1>Puntos Masivos</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <form method="POST">
-        <table id="tabla-familias" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="select-all" /> Seleccionar Todo</th>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Correo</th>
-                    <th>Puntos actuales</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for familia in familias %}
-                <tr>
-                    <td><input type="checkbox" name="familia_ids" value="{{ familia.id }}" /></td>
-                    <td>{{ familia.id }}</td>
-                    <td>{{ familia.nombre }}</td>
-                    <td>{{ familia.correo }}</td>
-                    <td>{{ familia.puntos }}</td>
-                </tr>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
                 {% endfor %}
-            </tbody>
-        </table>
+            {% endif %}
+        {% endwith %}
 
-        <br/>
+        <form method="POST" id="form-masivos">
+            <div class="table-responsive">
+                <table id="tabla-familias" class="display">
+                    <thead>
+                        <tr>
+                            <th style="min-width:145px;">
+                                <input type="checkbox" id="select-all" style="margin-right:6px;" /> Seleccionar Todo
+                            </th>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Puntos actuales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for familia in familias %}
+                        <tr>
+                            <td><input type="checkbox" name="familia_ids" value="{{ familia.id }}" /></td>
+                            <td>{{ familia.id }}</td>
+                            <td>{{ familia.nombre }}</td>
+                            <td>{{ familia.correo }}</td>
+                            <td>{{ familia.puntos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        <label for="tipo">Acción:</label>
-        <select name="tipo" id="tipo" required>
-            <option value="" disabled selected>Selecciona acción</option>
-            <option value="suma">Sumar puntos</option>
-            <option value="canje">Restar puntos</option>
-        </select>
+            <div class="masivos-form-row">
+                <label for="tipo">Acción:</label>
+                <select name="tipo" id="tipo" required>
+                    <option value="" disabled selected>Selecciona acción</option>
+                    <option value="suma">Sumar puntos</option>
+                    <option value="canje">Restar puntos</option>
+                </select>
 
-        <label for="puntos">Cantidad de puntos:</label>
-        <input type="number" name="puntos" id="puntos" min="1" required />
+                <label for="puntos">Cantidad de puntos:</label>
+                <input type="number" name="puntos" id="puntos" min="1" required />
 
-        <label for="descripcion">Motivo/Descripción:</label>
-        <input type="text" name="descripcion" id="descripcion" required />
+                <label for="descripcion">Motivo/Descripción:</label>
+                <input type="text" name="descripcion" id="descripcion" required />
 
-        <button type="submit">Aplicar a familias seleccionadas</button>
-    </form>
-    <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+                <button type="submit" class="btn btn-primary">Aplicar a familias seleccionadas</button>
+            </div>
+        </form>
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
+    </div>
 
     <!-- jQuery y DataTables -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>

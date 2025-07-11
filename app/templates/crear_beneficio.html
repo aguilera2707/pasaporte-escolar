@@ -6,56 +6,65 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
 </head>
 <body>
-    <h1>Crear nuevo beneficio</h1>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor" style="max-width: 670px;">
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-bottom: 1.4em; display:inline-block;">← Volver al panel de administración</a>
+        <h1>Crear nuevo beneficio</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="mensajes-flash">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('crear_beneficio') }}" class="benef-form">
+            <label for="nombre">Nombre del beneficio:</label>
+            <input type="text" id="nombre" name="nombre" required>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
+            <label for="puntos_requeridos">Puntos necesarios:</label>
+            <input type="number" id="puntos_requeridos" name="puntos_requeridos" required>
+
+            <button type="submit" class="btn btn-primary">🎁 Crear beneficio</button>
+        </form>
+        <h2 style="margin-top:2.5em;">Beneficios creados</h2>
+        {% if beneficios %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Puntos necesarios</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for beneficio in beneficios %}
+                    <tr>
+                        <td>{{ beneficio.nombre }}</td>
+                        <td>{{ beneficio.puntos_requeridos }}</td>
+                        <td class="acciones">
+                            <a href="{{ url_for('editar_beneficio', beneficio_id=beneficio.id) }}" class="btn-edit">✏️ Editar</a>
+                            <form action="{{ url_for('eliminar_beneficio', beneficio_id=beneficio.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este beneficio?');">
+                                <button type="submit" class="btn-delete">🗑 Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="margin-top:2em;"><em>No hay beneficios creados aún.</em></p>
         {% endif %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('crear_beneficio') }}">
-        <label for="nombre">Nombre del beneficio:</label><br>
-        <input type="text" id="nombre" name="nombre" required><br><br>
-
-        <label for="puntos_requeridos">Puntos necesarios:</label><br>
-        <input type="number" id="puntos_requeridos" name="puntos_requeridos" required><br><br>
-
-        <button type="submit">Crear beneficio</button>
-    </form>
-
-    <h2>Beneficios creados</h2>
-    {% if beneficios %}
-    <table class="transactions">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Puntos necesarios</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for beneficio in beneficios %}
-        <tr>
-            <td>{{ beneficio.nombre }}</td>
-            <td>{{ beneficio.puntos_requeridos }}</td>
-            <td style="white-space: nowrap; vertical-align: middle;">
-            <a href="{{ url_for('editar_beneficio', beneficio_id=beneficio.id) }}" class="btn-action">Editar</a>
-            <form action="{{ url_for('eliminar_beneficio', beneficio_id=beneficio.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este beneficio?');">
-                <button type="submit" class="btn-delete">Eliminar</button>
-            </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-    {% else %}
-    <p><em>No hay beneficios creados aún.</em></p>
-    {% endif %}
-
-    <p><a href="{{ url_for('panel_admin') }}">← Volver al panel de administración</a></p>
+    </div>
+    <script>
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
+    </script>
 </body>
+
 </html>
