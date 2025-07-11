@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil_familia.css') }}">
 </head>
 <body>
-    <body>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div id="mensajes-flash">
@@ -19,9 +18,6 @@
     {% endwith %}
 
     <div class="container">
-        <!-- resto de tu contenido -->
-
-    <div class="container">
         <div class="header">
             <h1>👨‍👩‍👧 ¡Hola, {{ familia.nombre }}!</h1>
             <a class="logout" href="{{ url_for('logout_familia') }}">🔓 Cerrar sesión</a>
@@ -31,29 +27,25 @@
             <h2>Puntos actuales: <span>{{ familia.puntos }}</span></h2>
         </div>
 
-<div class="qr-section">
-    <h2>Tu código QR</h2>
-    <div class="qr-wrapper">
-        <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
-        <!--<form method="GET" action="{{ url_for('descargar_qr', familia_id=familia.id) }}">
-            <button class="btn-download" type="submit">📥 Descargar QR</button>
-        </form> -->
-        <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
-            <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
-        </form>
-
-        {% if ultimo_evento %}
-            <button id="btn-escanear">📷 Escanear nuevo evento</button>
-            <div id="scanner-container" style="display: none; margin-top: 20px;">
-                <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
-                <p id="scan-status">Apunta al código QR del evento</p>
+        <div class="qr-section">
+            <h2>Tu código QR</h2>
+            <div class="qr-wrapper">
+                <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
+                <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
+                    <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>
+                </form>
+                {% if ultimo_evento %}
+                    <button id="btn-escanear">📷 Escanear nuevo evento</button>
+                    <div id="scanner-container" style="display: none; margin-top: 20px;">
+                        <video id="qr-video" style="width:100%; max-width:400px; border: 2px solid #ccc; border-radius: 10px;"></video>
+                        <p id="scan-status">Apunta al código QR del evento</p>
+                        <button id="btn-cancelar-escanear" type="button" style="margin-top: 8px;">Cancelar</button>
+                    </div>
+                {% else %}
+                    <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
+                {% endif %}
             </div>
-        {% else %}
-            <p style="color: gray; text-align: center;">No hay eventos disponibles para escanear.</p>
-        {% endif %}
-    </div>
-</div>
-
+        </div>
 
         <div class="beneficios">
             <h2>🎁 Beneficios disponibles</h2>
@@ -107,22 +99,24 @@
     const videoElem = document.getElementById('qr-video');
     const statusText = document.getElementById('scan-status');
     const scanButton = document.getElementById('btn-escanear');
-
+    const cancelButton = document.getElementById('btn-cancelar-escanear');
     let scanner = null;
 
     scanButton?.addEventListener('click', () => {
         scannerContainer.style.display = 'block';
+        scanButton.style.display = 'none';
 
         if (!scanner) {
             scanner = new QrScanner(videoElem, result => {
                 statusText.textContent = '⏳ Enviando QR...';
                 scanner.stop();
-
+                scanButton.style.display = '';
+                scannerContainer.style.display = 'none';
                 try {
                     const url = new URL(result);
                     const path = url.pathname;
                     if (path.startsWith("/escanear_evento/")) {
-                        window.location.href = path; // 🔁 Redirige para validar ubicación
+                        window.location.href = path;
                     } else {
                         alert("QR inválido");
                         scanner.start();
@@ -133,18 +127,24 @@
                 }
             });
         }
-
         QrScanner.hasCamera().then(hasCam => {
             if (!hasCam) return alert('No se detectó cámara');
             scanner.start();
             statusText.textContent = '📷 Escanea el código del evento';
         });
     });
+
+    cancelButton?.addEventListener('click', () => {
+        if (scanner) {
+            scanner.stop();
+        }
+        scannerContainer.style.display = 'none';
+        scanButton.style.display = '';
+        statusText.textContent = 'Apunta al código QR del evento';
+    });
 </script>
 <script>
 let timeout;
-
-// Función que redirige al logout tras 5 minutos de inactividad
 function iniciarTemporizadorInactividad() {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -152,15 +152,10 @@ function iniciarTemporizadorInactividad() {
         window.location.href = "{{ url_for('logout') }}";
     }, 5 * 60 * 1000); // 5 minutos
 }
-
-// Reinicia el temporizador con cualquier actividad del usuario
 ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(event => {
     document.addEventListener(event, iniciarTemporizadorInactividad);
 });
-
 iniciarTemporizadorInactividad();
 </script>
-
-
 </body>
 </html>
