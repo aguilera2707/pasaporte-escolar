@@ -9,3 +9,4 @@ pillow
 gunicorn
 Flask-Migrate
 pytz
+geopy
