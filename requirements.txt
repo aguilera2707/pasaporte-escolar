@@ -10,3 +10,4 @@ gunicorn
 Flask-Migrate
 pytz
 geopy
+reportlab
