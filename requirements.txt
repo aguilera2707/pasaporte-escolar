@@ -1,4 +1,9 @@
-flask
-flask_sqlalchemy
-flask_cors
+Flask
+Flask-SQLAlchemy
+Flask-Cors
 python-dotenv
+Flask-Login
+Flask-Bcrypt
+qrcode
+pillow
+gunicorn

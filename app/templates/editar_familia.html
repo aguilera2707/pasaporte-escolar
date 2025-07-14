@@ -6,29 +6,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
 </head>
 <body>
-    <h1>Editar Familia</h1>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor">
+        <h1>Editar Familia</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="mensajes-flash">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <form method="POST">
-        <label for="nombre">Nombre:</label><br>
-        <input type="text" id="nombre" name="nombre" value="{{ familia.nombre }}" required><br><br>
+        <form method="POST" class="benef-form">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" value="{{ familia.nombre }}" required>
 
-        <label for="correo">Correo:</label><br>
-        <input type="email" id="correo" name="correo" value="{{ familia.correo }}" required><br><br>
+            <label for="correo">Correo:</label>
+            <input type="email" id="correo" name="correo" value="{{ familia.correo }}" required>
 
-        <label for="password">Contraseña:</label><br>
-        <input type="text" id="password" name="password" value="{{ familia.password }}" required><br><br>
+            <label for="password">Contraseña:</label>
+            <input type="text" id="password" name="password" value="{{ familia.password }}" required>
 
-        <button type="submit">Actualizar</button>
-    </form>
+            <button type="submit">Actualizar</button>
+        </form>
 
-    <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
+        <div style="text-align:center; margin-top:1em;">
+            <a href="{{ url_for('panel_admin') }}" class="btn-edit">← Volver al panel</a>
+        </div>
+    </div>
+    <script>
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
+    </script>
 </body>
 </html>

@@ -6,32 +6,45 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
 </head>
 <body>
-    <h1>Crear nuevo administrador</h1>
+    <div class="admin-bg"></div>
+    <div class="admin-contenedor">
+        <h1>Crear nuevo administrador</h1>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="mensajes-flash">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <form method="POST">
-        <label for="usuario">Usuario:</label>
-        <input type="text" name="usuario" required><br>
+        <form method="POST" class="benef-form">
+            <label for="usuario">Usuario:</label>
+            <input type="text" id="usuario" name="usuario" required>
 
-        <label for="password">Contraseña:</label>
-        <input type="password" name="password" required><br>
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" required>
 
-        <label for="rol">Rol:</label>
-        <select name="rol" id="rol" required>
-            <option value="admin">Administrador</option>
-            <option value="supervisor">Supervisor</option>
-        </select><br><br>
+            <label for="rol">Rol:</label>
+            <select id="rol" name="rol" required>
+                <option value="admin">Administrador</option>
+                <option value="supervisor">Supervisor</option>
+            </select>
 
-        <button type="submit">Crear administrador</button>
-    </form>
+            <button type="submit">Crear administrador</button>
+        </form>
 
-    <p><a href="{{ url_for('lista_administradores') }}">← Volver al panel</a></p>
+        <div style="text-align:center; margin-top:1em;">
+            <a href="{{ url_for('lista_administradores') }}" class="btn-edit">← Volver al panel</a>
+        </div>
+    </div>
+    <script>
+        setTimeout(() => {
+            const div = document.getElementById('mensajes-flash');
+            if (div) div.style.display = 'none';
+        }, 4000);
+    </script>
 </body>
 </html>
