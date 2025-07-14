@@ -8,3 +8,4 @@ qrcode
 pillow
 gunicorn
 Flask-Migrate
+pytz
