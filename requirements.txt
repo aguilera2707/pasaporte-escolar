@@ -7,3 +7,4 @@ Flask-Bcrypt
 qrcode
 pillow
 gunicorn
+Flask-Migrate
