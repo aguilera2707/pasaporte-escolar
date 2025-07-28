@@ -120,8 +120,41 @@
             </div>
             {% endfor %}
         </div>
-    {% endif %}
 
+        <!-- 🆕 MODALES DE RESETEO DE BASE DE DATOS -->
+        <hr />
+        <h2>⚠️ Reseteo de base de datos</h2>
+        <p>Para comenzar un nuevo ciclo escolar, puedes resetear todos los datos de familias, eventos y puntos.</p>
+        <button onclick="mostrarConfirmacion()" class="btn-danger">
+            🔄 Resetear base de datos
+        </button>
+
+        <!-- Modal 1: Confirmación visual -->
+        <div id="modalConfirmacion" class="admin-modal" style="display:none;">
+            <div class="admin-modal-box">
+                <h3>⚠️ Confirmación</h3>
+                <p>Esta acción eliminará permanentemente todos los datos de familias, transacciones, beneficios y eventos.</p>
+                <p>¿Estás seguro de continuar?</p>
+                <div class="acciones">
+                    <button onclick="solicitarPassword()" class="btn-danger">Sí, continuar</button>
+                    <button onclick="cerrarModal()" class="btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal 2: Confirmación por contraseña -->
+        <div id="modalPassword" class="admin-modal" style="display:none;">
+            <div class="admin-modal-box">
+                <h3>🔐 Confirmación de identidad</h3>
+                <label for="passwordInput">Ingresa tu contraseña para confirmar:</label><br>
+                <input type="password" id="passwordInput" required style="margin-top: 0.5em; padding: 0.5em; width: 100%; max-width: 300px; border-radius: 7px; border: 1px solid #ccc;">
+                <div class="acciones" style="margin-top: 1em;">
+                    <button onclick="enviarReseteo()" class="btn-danger">Confirmar reseteo</button>
+                    <button type="button" onclick="cerrarModal()" class="btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     </div><!-- admin-contenedor -->
 
     <!-- jQuery y DataTables -->
@@ -248,7 +281,55 @@
                 }
             });
         }
-    </script>
 
+        // 🆕 Funciones para modales de reseteo
+        function mostrarConfirmacion() {
+            document.getElementById("modalConfirmacion").style.display = "flex";
+        }
+        function solicitarPassword() {
+            document.getElementById("modalConfirmacion").style.display = "none";
+            document.getElementById("modalPassword").style.display = "flex";
+        }
+        function cerrarModal() {
+            document.getElementById("modalConfirmacion").style.display = "none";
+            document.getElementById("modalPassword").style.display = "none";
+        }
+
+        async function enviarReseteo() {
+    const password = document.getElementById("passwordInput").value.trim();
+    if (!password) return alert("Debes ingresar tu contraseña.");
+
+    try {
+        const response = await fetch("/resetear_base_datos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password })
+        });
+
+        if (!response.ok) throw new Error("Error en el reseteo");
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = response.headers.get("Content-Disposition").split("filename=")[1].replace(/"/g, "");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        mostrarMensaje("✅ Base de datos reiniciada y respaldo descargado.");
+        cerrarModal();
+
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+
+    } catch (error) {
+        console.error("Fallo el reseteo:", error);
+        mostrarMensaje("❌ Error al intentar resetear la base de datos", "error");
+    }
+}
+
+    </script>
 </body>
 </html>

@@ -1854,3 +1854,77 @@ def refrescar_timeout():
 
         # si no ha expirado, refrescamos la marca de actividad
         session["last_activity"] = now
+from flask import send_file
+import zipfile
+import io
+import os
+import csv
+from werkzeug.security import check_password_hash  # por si no estaba importado
+
+@app.route("/resetear_base_datos", methods=["POST"])
+@login_requerido_admin
+def resetear_base_datos():
+    if session.get("rol") != "admin":
+        return "No autorizado", 403
+
+    data = request.get_json()
+    password = data.get("password", "")
+    admin_id = session.get("admin_id")
+    admin = Admin.query.get(admin_id)
+
+    if not admin or not admin.verificar_password(password):
+        return "Contraseña incorrecta", 401
+
+    os.makedirs("respaldo", exist_ok=True)
+
+    # Crear ZIP en memoria
+    zip_stream = io.BytesIO()
+    with zipfile.ZipFile(zip_stream, mode="w", compression=zipfile.ZIP_DEFLATED) as zipf:
+        def agregar_csv(nombre, query, campos):
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(campos)
+            for item in query:
+                writer.writerow([getattr(item, campo) for campo in campos])
+            zipf.writestr(f"{nombre}.csv", output.getvalue())
+
+        agregar_csv("familias", Familia.query.all(), ["id", "nombre", "correo", "puntos"])
+        agregar_csv("transacciones", Transaccion.query.all(), ["id", "familia_id", "tipo", "puntos", "descripcion", "fecha"])
+        agregar_csv("movimientos", MovimientoPuntos.query.all(), ["id", "familia_id", "cambio", "motivo", "fecha"])
+        agregar_csv("beneficios", Beneficio.query.all(), ["id", "nombre", "puntos_requeridos"])
+        agregar_csv("eventos_qr", EventoQR.query.all(), ["id", "nombre_evento", "puntos", "qr_filename", "latitud", "longitud", "requiere_ubic", "valid_from", "valid_to"])
+        agregar_csv("eventos_registrados", EventoQRRegistro.query.all(), ["id", "familia_id", "evento_id", "fecha"])
+
+    zip_stream.seek(0)
+    zip_filename = f"respaldo_cuponera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+
+    with open(os.path.join("respaldo", zip_filename), "wb") as f:
+        f.write(zip_stream.getvalue())
+
+    # Borrar registros (excepto Admins)
+    db.session.query(EventoQRRegistro).delete()
+    db.session.query(EventoQR).delete()
+    db.session.query(MovimientoPuntos).delete()
+    db.session.query(Transaccion).delete()
+    db.session.query(Beneficio).delete()
+    db.session.query(Familia).delete()
+    db.session.commit()
+
+    # Guardar en el log
+    nuevo_log = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=admin.usuario,
+        role=admin.rol,
+        action="eliminar",
+        entity="Base de datos",
+        details="El administrador ejecutó un reseteo completo de la base de datos al inicio del ciclo escolar."
+    )
+    db.session.add(nuevo_log)
+    db.session.commit()
+
+    return send_file(
+        zip_stream,
+        as_attachment=True,
+        download_name=zip_filename,
+        mimetype="application/zip"
+    )
