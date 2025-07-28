@@ -11,3 +11,4 @@ Flask-Migrate
 pytz
 geopy
 reportlab
+openpyxl
