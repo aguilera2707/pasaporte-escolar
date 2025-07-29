@@ -12,3 +12,4 @@ pytz
 geopy
 reportlab
 openpyxl
+Flask-Mail

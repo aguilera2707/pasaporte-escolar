@@ -247,6 +247,9 @@ def sumar_puntos():
     movimiento = MovimientoPuntos(familia_id=familia.id, cambio=puntos, motivo=motivo)
     db.session.add(movimiento)
     db.session.commit()
+    
+    # Enviar correo
+    enviar_correo_movimiento(familia.correo, familia.nombre, puntos, "suma", motivo)
 
     return jsonify({"mensaje": "Puntos sumados correctamente", "puntos_actuales": familia.puntos})
 
@@ -269,6 +272,9 @@ def restar_puntos():
     movimiento = MovimientoPuntos(familia_id=familia.id, cambio=-puntos, motivo=motivo)
     db.session.add(movimiento)
     db.session.commit()
+    
+    # Enviar correo
+    enviar_correo_movimiento(familia.correo, familia.nombre, puntos, "canje", motivo)
 
     return jsonify({"mensaje": "Puntos restados correctamente", "puntos_actuales": familia.puntos})
 
@@ -366,6 +372,9 @@ def registrar_transaccion():
     db.session.add(nueva_transaccion)
 
     db.session.commit()
+    
+    
+    enviar_correo_movimiento(familia.correo, familia.nombre, abs(puntos), tipo, descripcion)
     return jsonify({'mensaje': 'Transacción registrada con éxito', 'puntos_restantes': familia.puntos}), 200
 
 
@@ -485,6 +494,8 @@ def registrar_transaccion_web(familia_id):
 
     db.session.add(transaccion)
     db.session.commit()
+    
+    enviar_correo_movimiento(familia.correo, familia.nombre, abs(puntos_finales), tipo, descripcion)
 
     return jsonify({"mensaje": "Transacción registrada con éxito"})
 
@@ -1691,6 +1702,8 @@ def puntos_masivos():
                     fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
                 )
                 db.session.add(nueva_transaccion)
+                
+                enviar_correo_movimiento(familia.correo, familia.nombre, puntos, tipo, descripcion)
 
         db.session.commit()
         
@@ -1973,3 +1986,26 @@ def importar_excel_familias():
         print(f"[ERROR] Al importar Excel: {e}")
         flash("❌ Hubo un error al procesar el archivo.", "error")
         return redirect(url_for("panel_admin"))
+
+
+from flask_mail import Message
+from app.extensions import mail
+
+def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo):
+    puntos_str = f"+{puntos}" if tipo == "suma" else f"-{puntos}"
+    asunto = f"🟢 Movimiento de puntos en Pasaporte Escolar"
+    cuerpo = f"""Hola {nombre_familia},
+
+Te informamos que se ha registrado un nuevo movimiento en tu cuenta del Pasaporte Escolar:
+
+🧾 Tipo de movimiento: {tipo.upper()}
+🎯 Puntos: {puntos_str}
+📝 Motivo: {motivo}
+
+Puedes ingresar a tu perfil para ver más detalles.
+
+Atentamente,
+El equipo de Pasaporte Escolar
+"""
+    msg = Message(asunto, recipients=[destinatario], body=cuerpo)
+    mail.send(msg)
