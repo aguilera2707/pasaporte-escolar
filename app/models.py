@@ -3,6 +3,10 @@ from datetime import datetime
 import pytz
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# -------- FUNCIÓN DE HORA LOCAL --------
+def hora_local_merida():
+    return datetime.now(pytz.timezone('America/Merida')).replace(tzinfo=None)
+
 # -------- MODELOS --------
 
 class Familia(db.Model):
@@ -21,7 +25,7 @@ class MovimientoPuntos(db.Model):
     familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
     cambio = db.Column(db.Integer, nullable=False)  # Positivo para sumar, negativo para restar
     motivo = db.Column(db.String(200))              # Ej: "Llegó tarde", "Asistió a evento"
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
+    fecha = db.Column(db.DateTime, default=hora_local_merida, nullable=False)
 
     familia = db.relationship('Familia', backref=db.backref('movimientos', lazy=True))
 
@@ -36,7 +40,7 @@ class Transaccion(db.Model):
     tipo = db.Column(db.String(10), nullable=False)  # "suma" o "canje"
     puntos = db.Column(db.Integer, nullable=False)
     descripcion = db.Column(db.String(200))
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
+    fecha = db.Column(db.DateTime, default=hora_local_merida, nullable=False)
 
     familia = db.relationship('Familia', backref=db.backref('transacciones', lazy=True))
 
@@ -74,9 +78,9 @@ class EventoQR(db.Model):
     qr_filename = db.Column(db.String(200), nullable=True)
     latitud = db.Column(db.Float)
     longitud = db.Column(db.Float)
-    requiere_ubic = db.Column(db.Boolean, default=True)            # ← nueva columna
-    valid_from    = db.Column(db.DateTime, nullable=True)          # ← inicio
-    valid_to      = db.Column(db.DateTime, nullable=True)
+    requiere_ubic = db.Column(db.Boolean, default=True)
+    valid_from = db.Column(db.DateTime, nullable=True)
+    valid_to = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f'<EventoQR {self.nombre_evento} – {self.puntos} puntos>'
@@ -87,7 +91,7 @@ class EventoQRRegistro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
     evento_id = db.Column(db.Integer, db.ForeignKey('evento_qr.id'), nullable=False)
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(pytz.utc), nullable=False)
+    fecha = db.Column(db.DateTime, default=hora_local_merida, nullable=False)
 
     familia = db.relationship('Familia', backref='eventos_escaneados')
     evento = db.relationship('EventoQR', backref='registros')
@@ -118,12 +122,12 @@ class LugarFrecuente(db.Model):
 class LogEntry(db.Model):
     __tablename__ = 'log_entries'
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = db.Column(db.DateTime, default=hora_local_merida, nullable=False)
     user = db.Column(db.String(64), nullable=False)
     role = db.Column(db.String(32), nullable=False)
-    action = db.Column(db.String(32), nullable=False)   # e.g. 'crear', 'editar', 'eliminar', 'login'
-    entity = db.Column(db.String(32), nullable=False)   # e.g. 'Familia', 'EventoQR', 'Admin'
-    details = db.Column(db.Text, nullable=True)         # Descripción detallada
+    action = db.Column(db.String(32), nullable=False)
+    entity = db.Column(db.String(32), nullable=False)
+    details = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         ts = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')

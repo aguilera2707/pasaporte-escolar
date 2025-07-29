@@ -811,6 +811,9 @@ def crear_beneficio():
     return render_template('crear_beneficio.html', beneficios=beneficios)
 
 
+from datetime import datetime
+import pytz
+
 @app.route('/escanear_qr_evento/<int:evento_id>/<int:familia_id>')
 def escanear_qr_familia_en_evento(evento_id, familia_id):
     evento = EventoQR.query.get(evento_id)
@@ -825,12 +828,41 @@ def escanear_qr_familia_en_evento(evento_id, familia_id):
     if ya_escaneo:
         return "Esta familia ya fue registrada en este evento", 400
 
+    # Hora local de Mérida sin tzinfo
+    hora_merida = datetime.now(pytz.timezone('America/Merida')).replace(tzinfo=None)
+
+    # Sumar puntos
     familia.puntos += evento.puntos
-    db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
+
+    # Registrar asistencia
+    db.session.add(EventoQRRegistro(
+        familia_id=familia_id,
+        evento_id=evento_id,
+        fecha=hora_merida
+    ))
+
+    # Registrar transacción (para historial con hora)
+    db.session.add(Transaccion(
+        familia_id=familia_id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}",
+        fecha=hora_merida
+    ))
+
+    # Enviar correo de confirmación
+    enviar_correo_movimiento(
+        correo=familia.correo,
+        nombre_familia=familia.nombre,
+        puntos=evento.puntos,
+        tipo='suma',
+        motivo=f"Asistencia al evento: {evento.nombre_evento}"
+    )
+
     db.session.commit()
-    
 
     return f"Puntos del evento '{evento.nombre_evento}' sumados correctamente a la familia '{familia.nombre}'."
+
 
 
 @app.route('/staff/escanear/<int:familia_id>', methods=['GET', 'POST'])
@@ -1015,7 +1047,7 @@ def registrar_asistencia_evento():
         tipo='suma',
         puntos=evento.puntos,
         descripcion=f"Asistencia al evento: {evento.nombre_evento}",
-        fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None) - timedelta(hours=6)
+        fecha = datetime.now(pytz.timezone('America/Merida')).replace(tzinfo=None)
     )
     db.session.add(transaccion)
     db.session.commit()
