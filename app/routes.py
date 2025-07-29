@@ -753,8 +753,14 @@ def escanear_evento_qr(evento_id):
         tipo='suma',
         puntos=evento.puntos,
         descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+        
+        
     ))
+    
+    
     db.session.commit()
+    
+    
 
     return render_template("asistencia_exitosa.html", evento=evento, familia=familia, ya_asistio=False)
 
@@ -822,6 +828,7 @@ def escanear_qr_familia_en_evento(evento_id, familia_id):
     familia.puntos += evento.puntos
     db.session.add(EventoQRRegistro(familia_id=familia_id, evento_id=evento_id))
     db.session.commit()
+    
 
     return f"Puntos del evento '{evento.nombre_evento}' sumados correctamente a la familia '{familia.nombre}'."
 
@@ -850,6 +857,7 @@ def escanear_familia_staff(familia_id):
             registro = EventoQRRegistro(familia_id=familia_id, evento_id=evento_id)
             db.session.add(registro)
             db.session.commit()
+            
             flash(f"{evento.puntos} puntos sumados por el evento '{evento.nombre_evento}'", "success")
 
         return redirect(url_for('escanear_familia_staff', familia_id=familia_id))
@@ -1146,6 +1154,16 @@ def validar_ubicacion_evento():
         descripcion=f"Asistencia al evento: {evento.nombre_evento}"
     ))
     db.session.commit()
+    
+    print("[DEBUG] Llamando a enviar_correo_movimiento desde validar_ubicacion_evento")
+
+    enviar_correo_movimiento(
+    familia.correo,
+    familia.nombre,
+    evento.puntos,
+    "suma",
+    f"Asistencia al evento: {evento.nombre_evento}"
+    )
 
     return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
 
@@ -1319,7 +1337,16 @@ def validar_qr_evento():
         puntos=evento.puntos,
         descripcion=f"Asistencia al evento: {evento.nombre_evento}"
     ))
+    
+    
     db.session.commit()
+    
+    enviar_correo_movimiento(
+    destinatario=familia.correo,
+    tipo='suma',
+    puntos=evento.puntos,
+    nombre_familia=familia.nombre
+    )
 
     return jsonify({
         "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
@@ -1988,24 +2015,42 @@ def importar_excel_familias():
         return redirect(url_for("panel_admin"))
 
 
-from flask_mail import Message
-from app.extensions import mail
+
 
 def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo):
-    puntos_str = f"+{puntos}" if tipo == "suma" else f"-{puntos}"
-    asunto = f"🟢 Movimiento de puntos en Pasaporte Escolar"
-    cuerpo = f"""Hola {nombre_familia},
+    print(f"[DEBUG] FUNCION llamada: enviar_correo_movimiento({destinatario}, {puntos}, {tipo})")
+    
+    from flask_mail import Message
+    from app import mail
+    
+    if tipo == "suma":
+        asunto = f"✅ Has ganado {puntos} puntos"
+        cuerpo = (
+            f"Hola {nombre_familia},\n\n"
+            f"Has recibido {puntos} puntos por:\n👉 {motivo}\n\n"
+            f"Gracias por participar en el programa Pasaporte Escolar.\n\n"
+            f"-- Instituto Moderno Americano"
+        )
+    elif tipo == "canje":
+        asunto = f"🎁 Has canjeado {puntos} puntos"
+        cuerpo = (
+            f"Hola {nombre_familia},\n\n"
+            f"Se han descontado {puntos} puntos por:\n👉 {motivo}\n\n"
+            f"¡Esperamos que disfrutes tu recompensa!\n\n"
+            f"-- Instituto Moderno Americano"
+        )
+    else:
+        asunto = "📌 Movimiento de puntos"
+        cuerpo = (
+            f"Hola {nombre_familia},\n\n"
+            f"Se ha registrado un movimiento de puntos ({tipo}) por:\n👉 {motivo}\n\n"
+            f"-- Instituto Moderno Americano"
+        )
 
-Te informamos que se ha registrado un nuevo movimiento en tu cuenta del Pasaporte Escolar:
+    msg = Message(subject=asunto, recipients=[destinatario], body=cuerpo)
 
-🧾 Tipo de movimiento: {tipo.upper()}
-🎯 Puntos: {puntos_str}
-📝 Motivo: {motivo}
-
-Puedes ingresar a tu perfil para ver más detalles.
-
-Atentamente,
-El equipo de Pasaporte Escolar
-"""
-    msg = Message(asunto, recipients=[destinatario], body=cuerpo)
-    mail.send(msg)
+    try:
+        mail.send(msg)
+        print(f"[INFO] Correo enviado a {destinatario}")
+    except Exception as e:
+        print(f"[ERROR] Fallo al enviar correo: {e}")
