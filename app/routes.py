@@ -2001,50 +2001,50 @@ def resetear_base_datos():
         mimetype="application/zip"
     )
 
+from flask import (
+    request, redirect, url_for, flash, current_app
+)
 from openpyxl import load_workbook
-from werkzeug.utils import secure_filename
+from app import app, db
+from app.models import Familia
+from functools import wraps
 
 @app.route("/importar_excel_familias", methods=["POST"])
 @login_requerido_admin
 def importar_excel_familias():
     archivo = request.files.get("excelFile")
-    if not archivo or not archivo.filename.endswith(".xlsx"):
+    if not archivo or not archivo.filename.lower().endswith(".xlsx"):
         flash("❌ Formato no válido. Asegúrate de subir un archivo .xlsx", "error")
         return redirect(url_for("panel_admin"))
 
     try:
-        wb = load_workbook(filename=archivo)
+        wb = load_workbook(archivo)
         hoja = wb.active
 
         filas_insertadas = 0
-        for fila in hoja.iter_rows(min_row=2, values_only=True):
-            nombre, correo, password, puntos = fila
-
+        for nombre, correo, password, puntos in hoja.iter_rows(min_row=2, values_only=True):
             if not nombre or not correo or not password:
-                continue  # ignora filas incompletas
-
-            # Verifica que no exista ya
-            existente = Familia.query.filter_by(correo=correo).first()
-            if existente:
                 continue
 
-            nueva_familia = Familia(
-                nombre=nombre,
-                correo=correo,
-                password=password,
-                puntos=int(puntos) if puntos else 0
-            )
-            db.session.add(nueva_familia)
-            filas_insertadas += 1
+            if not Familia.query.filter_by(correo=correo).first():
+                nueva = Familia(
+                    nombre=nombre,
+                    correo=correo,
+                    password=password,
+                    puntos=int(puntos) if puntos else 0
+                )
+                db.session.add(nueva)
+                filas_insertadas += 1
 
         db.session.commit()
         flash(f"✅ Se importaron {filas_insertadas} familias correctamente.", "success")
-        return redirect(url_for("panel_admin"))
 
     except Exception as e:
-        print(f"[ERROR] Al importar Excel: {e}")
+        current_app.logger.error(f"[ERROR] Al importar Excel: {e}")
         flash("❌ Hubo un error al procesar el archivo.", "error")
-        return redirect(url_for("panel_admin"))
+
+    # Redirige siempre al panel de admin ("/admin")
+    return redirect(url_for("panel_admin"))
 
 
 

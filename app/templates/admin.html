@@ -30,7 +30,17 @@
             {% endif %}
             </ul>
         </nav>
-        
+        <!-- Mostrar mensajes flash -->
+        {%- with messages = get_flashed_messages(with_categories=true) -%}
+            {%- if messages -%}
+                <div class="flash-container">
+                    {%- for category, msg in messages -%}
+                        <div class="flash {{ category }}">{{ msg }}</div>
+                    {%- endfor -%}
+                </div>
+            {%- endif -%}
+        {%- endwith -%}
+
         <h1>Panel de Administración</h1>
 
         <h2>Escaneo de Eventos (Staff)</h2>
