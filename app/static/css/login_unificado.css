@@ -219,4 +219,23 @@ button[type="submit"]:hover {
     user-select: none;
     pointer-events: none; /* No puede seleccionarse accidentalmente */
 }
+
+.campo-password {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.campo-password input {
+    flex: 1;
+    padding-right: 2.5em;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
 /* Fin */

@@ -122,12 +122,16 @@ class LugarFrecuente(db.Model):
 class LogEntry(db.Model):
     __tablename__ = 'log_entries'
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=hora_local_merida, nullable=False)
+    timestamp = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(pytz.timezone('America/Merida')).replace(tzinfo=None),
+        nullable=False
+    )
     user = db.Column(db.String(64), nullable=False)
     role = db.Column(db.String(32), nullable=False)
-    action = db.Column(db.String(32), nullable=False)
-    entity = db.Column(db.String(32), nullable=False)
-    details = db.Column(db.Text, nullable=True)
+    action = db.Column(db.String(32), nullable=False)   # e.g. 'crear', 'editar', 'eliminar', 'login'
+    entity = db.Column(db.String(32), nullable=False)   # e.g. 'Familia', 'EventoQR', 'Admin'
+    details = db.Column(db.Text, nullable=True)         # Descripción detallada
 
     def __repr__(self):
         ts = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')

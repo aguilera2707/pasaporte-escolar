@@ -5,6 +5,24 @@
     <title>Acceso al Pasaporte Escolar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login_unificado.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .campo-password {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .campo-password input {
+            width: 100%;
+            padding-right: 2em;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #c29500;
+        }
+    </style>
 </head>
 <body>
     <!-- Fondo degradado, escudo y mascota -->
@@ -19,24 +37,27 @@
             <button type="button" id="tab-familia" class="active" onclick="mostrarTab('familia')">Familia</button>
             <button type="button" id="tab-admin" onclick="mostrarTab('admin')">Administrador</button>
         </div>
+
         <!-- Familia -->
         <form id="form-familia" method="POST" action="{{ url_for('login_familia') }}">
             <div class="input-group">
-                <!-- SVG ícono correo -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-11Zm2.5-.5a.5.5 0 0 0-.5.5v.27l8 6.39 8-6.39V6.5a.5.5 0 0 0-.5-.5h-15Zm15 13a.5.5 0 0 0 .5-.5V9.34l-7.11 5.68a1 1 0 0 1-1.28 0L4 9.34V17.5a.5.5 0 0 0 .5.5h15Z"></path></svg>
                 <input type="email" name="correo" placeholder="Correo electrónico" required>
             </div>
             <div class="input-group">
-                <!-- SVG ícono candado más moderno -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <rect x="5" y="11" width="14" height="8" rx="2" fill="none" stroke="#c29500" stroke-width="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="#c29500" stroke-width="2"/>
                 <circle cx="12" cy="15" r="1.5" fill="#c29500"/>
                 </svg>
-                <input type="password" name="password" placeholder="Contraseña" required>
+                <div class="campo-password">
+                    <input type="password" name="password" id="password-familia" placeholder="Contraseña" required>
+                    <span class="toggle-password" onclick="togglePassword('familia')">👁</span>
+                </div>
             </div>
             <button type="submit">Ingresar</button>
         </form>
+
         <!-- Admin -->
         <form id="form-admin" method="POST" action="{{ url_for('login') }}" style="display:none;">
             <div class="input-group">
@@ -47,21 +68,27 @@
             </div>
             <div class="input-group">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.75 10V7a5.25 5.25 0 1 1 10.5 0v3m-10.5 0h10.5m-10.5 0A2.25 2.25 0 0 0 4.5 12.25v6A2.25 2.25 0 0 0 6.75 20.5h10.5a2.25 2.25 0 0 0 2.25-2.25v-6A2.25 2.25 0 0 0 17.25 10m-5.25 3.75a1.5 1.5 0 1 1 3 0v2.25a1.5 1.5 0 1 1-3 0V13.75Z" stroke="#c29500" stroke-width="1.6" fill="none" /></svg>
-                <input type="password" name="password" placeholder="Contraseña" required>
+                <div class="campo-password">
+                    <input type="password" name="password" id="password-admin" placeholder="Contraseña" required>
+                    <span class="toggle-password" onclick="togglePassword('admin')">👁</span>
+                </div>
             </div>
             <button type="submit">Ingresar</button>
         </form>
+
         <a href="#" class="link recuperar">¿Olvidaste tu contraseña?</a>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div id="mensajes">
-                    {% for category, message in messages %}
-                        <div class="{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        {% if messages %}
+            <div id="mensajes">
+                {% for category, message in messages %}
+                    <div class="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% endwith %}
     </div>
+
     <footer class="footer-login">© 2025 Instituto Moderno Americano</footer>
 
     <script>
@@ -72,6 +99,15 @@
             document.getElementById('tab-admin').classList.toggle('active', tab === 'admin');
         }
         document.addEventListener("DOMContentLoaded", function() { mostrarTab('familia'); });
+
+        function togglePassword(tipo) {
+            const input = document.getElementById("password-" + tipo);
+            const icon = input.nextElementSibling;
+            const isPassword = input.type === "password";
+
+            input.type = isPassword ? "text" : "password";
+            icon.textContent = isPassword ? "🙈" : "👁";
+        }
     </script>
 </body>
 </html>

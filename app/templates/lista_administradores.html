@@ -42,11 +42,16 @@
                         <td>{{ admin.usuario }}</td>
                         <td>{{ admin.rol }}</td>
                         <td>
-                            <form action="{{ url_for('eliminar_administrador', admin_id=admin.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este administrador?');">
-                                    🗑 Eliminar
-                                </button>
-                            </form>
+                                {% if admin.usuario != 'admin' %}
+                                <a href="{{ url_for('editar_contrasena_admin', admin_id=admin.id) }}" class="btn btn-warning" style="margin-right: 0.5em;">
+                                🔐 Editar contraseña
+                                </a>
+                                {% endif %}
+                                <form action="{{ url_for('eliminar_administrador', admin_id=admin.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este administrador?');">
+                                        🗑 Eliminar
+                                    </button>
+                                </form>
                         </td>
                     </tr>
                     {% endfor %}

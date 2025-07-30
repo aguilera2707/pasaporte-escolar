@@ -2086,3 +2086,27 @@ def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo)
         print(f"[INFO] Correo enviado a {destinatario}")
     except Exception as e:
         print(f"[ERROR] Fallo al enviar correo: {e}")
+        
+
+
+@app.route("/admin/editar_contrasena/<int:admin_id>", methods=["GET", "POST"])
+@login_requerido_admin
+def editar_contrasena_admin(admin_id):
+    admin = Admin.query.get_or_404(admin_id)
+
+    if admin.usuario == 'admin':
+        flash("No se puede modificar la contraseña del administrador principal.", "error")
+        return redirect(url_for("lista_administradores"))
+
+    if request.method == "POST":
+        nueva = request.form.get("nueva_contrasena")
+        if not nueva or len(nueva) < 4:
+            flash("La nueva contraseña debe tener al menos 4 caracteres.", "error")
+        else:
+            admin.set_password(nueva)
+            db.session.commit()
+            flash("Contraseña actualizada con éxito.", "success")
+            return redirect(url_for("lista_administradores"))
+
+    return render_template("editar_contrasena.html", admin=admin)
+        

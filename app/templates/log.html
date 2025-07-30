@@ -57,16 +57,16 @@
                 </thead>
                 <tbody>
                     {% for entry in entries %}
-                    {% set local = entry.timestamp.astimezone() %}
-                    <tr>
-                        <td>{{ local.strftime("%Y-%m-%d") }}</td>
-                        <td>{{ "%02d:%02d:%02d"|format(local.hour, local.minute, local.second) }}</td>
-                        <td>{{ entry.user }}</td>
-                        <td>{{ entry.role }}</td>
-                        <td>{{ entry.action }}</td>
-                        <td>{{ entry.entity }}</td>
-                        <td>{{ entry.details }}</td>
-                    </tr>
+                        {% set local = entry.timestamp|localtime %}
+                        <tr>
+                            <td>{{ local[:10] }}</td>
+                            <td>{{ local[11:] }}</td>
+                            <td>{{ entry.user }}</td>
+                            <td>{{ entry.role }}</td>
+                            <td>{{ entry.action }}</td>
+                            <td>{{ entry.entity }}</td>
+                            <td>{{ entry.details }}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>

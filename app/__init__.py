@@ -18,9 +18,9 @@ app.permanent_session_lifetime = timedelta(minutes=30)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'aguilera2707@gmail.com'
-app.config['MAIL_PASSWORD'] = 'ctndyyibnwunpiqx'  # ← contraseña de aplicación
-app.config['MAIL_DEFAULT_SENDER'] = 'aguilera2707@gmail.com'
+app.config['MAIL_USERNAME'] = 'pasaporte-no-reply@cela.edu.mx'
+app.config['MAIL_PASSWORD'] = 'lrznarqzdskamqxm'  # ← contraseña de aplicación
+app.config['MAIL_DEFAULT_SENDER'] = 'pasaporte-no-reply@cela.edu.mx'
 
 # Inicialización de extensiones
 db = SQLAlchemy(app)
