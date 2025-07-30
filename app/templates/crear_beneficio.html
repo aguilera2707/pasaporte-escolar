@@ -8,7 +8,7 @@
 <body>
     <div class="admin-bg"></div>
     <div class="admin-contenedor" style="max-width: 670px;">
-        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-bottom: 1.4em; display:inline-block;">← Volver al panel de administración</a>
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-bottom:1.2em;">← Volver al panel</a>
         <h1>Crear nuevo beneficio</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}

@@ -9,6 +9,7 @@
 <body>
     <div class="admin-bg"></div>
     <div class="admin-contenedor">
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary">← Volver al panel</a>
         <h1>👨‍👩‍👧 Familias Registradas</h1>
         <form id="form-eliminar-masivo"
             method="POST"
@@ -51,9 +52,6 @@
                 🗑 Eliminar seleccionados
             </button>
         </form>
-        <div style="margin-top: 2rem;">
-            <a href="{{ url_for('panel_admin') }}" class="btn-primary">← Volver al panel</a>
-        </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>

@@ -181,3 +181,17 @@ tr:hover td { background: #fff6cc; }
     .admin-contenedor { padding: 0.6rem 0.09rem;}
     th, td { min-width: 90px; font-size: 0.93em;}
 }
+.btn-primary, .btn-volver, .admin-navbar ul li a, .admin-userbar a {
+    background: #e9b800;
+    color: #850f0f;
+    font-weight: bold;
+    padding: 0.49em 1.22em;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #850f0f11;
+    border: none;
+    transition: background 0.19s, color 0.19s, transform 0.13s;
+    font-size: 1.04em;
+    display: inline-block;
+    text-shadow: 0 1px 0 #fff8;
+}

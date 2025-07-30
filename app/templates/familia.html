@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+
+    <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
     <title>Perfil de Familia</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
@@ -101,7 +103,7 @@
     </form>
     <div id="mensaje-transaccion"></div>
 
-    <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
+    
 
     <script>
     document.getElementById("transaccionForm").addEventListener("submit", function(e) {

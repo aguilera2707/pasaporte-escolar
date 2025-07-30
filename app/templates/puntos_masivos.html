@@ -9,6 +9,7 @@
 <body>
     <div class="admin-bg"></div>
     <div class="admin-contenedor">
+        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
         <h1>Puntos Masivos</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -64,7 +65,7 @@
                 <button type="submit" class="btn btn-primary">Aplicar a familias seleccionadas</button>
             </div>
         </form>
-        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
+        
     </div>
 
     <!-- jQuery y DataTables -->

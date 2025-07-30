@@ -14,8 +14,7 @@
             <span>👤 Usuario: {{ session.get('nombre_usuario') }}</span>
             <a href="{{ url_for('logout') }}">Cerrar sesión</a>
         </div>
-
-        <nav class="admin-navbar">
+        <nav class="admin-navbar" id="admin-navbar">
             <ul>
             {% if rol == 'admin' %}
                 <li><a href="{{ url_for('crear_beneficio') }}">🎁 Crear Beneficio</a></li>
@@ -337,6 +336,8 @@
     }
 }
 
-    </script>
+</script>
+
+
 </body>
 </html>
