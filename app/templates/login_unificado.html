@@ -46,9 +46,9 @@
             </div>
             <div class="input-group">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <rect x="5" y="11" width="14" height="8" rx="2" fill="none" stroke="#c29500" stroke-width="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="#c29500" stroke-width="2"/>
-                <circle cx="12" cy="15" r="1.5" fill="#c29500"/>
+                    <rect x="5" y="11" width="14" height="8" rx="2" fill="none" stroke="#c29500" stroke-width="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="#c29500" stroke-width="2"/>
+                    <circle cx="12" cy="15" r="1.5" fill="#c29500"/>
                 </svg>
                 <div class="campo-password">
                     <input type="password" name="password" id="password-familia" placeholder="Contraseña" required>
@@ -62,7 +62,7 @@
         <form id="form-admin" method="POST" action="{{ url_for('login') }}" style="display:none;">
             <div class="input-group">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h2a5 5 0 0 1 10 0h2c0-3.866-3.134-7-7-7z"/>
+                    <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h2a5 5 0 0 1 10 0h2c0-3.866-3.134-7-7-7z"/>
                 </svg>
                 <input type="text" name="usuario" placeholder="Usuario" required>
             </div>
@@ -98,7 +98,33 @@
             document.getElementById('tab-familia').classList.toggle('active', tab === 'familia');
             document.getElementById('tab-admin').classList.toggle('active', tab === 'admin');
         }
-        document.addEventListener("DOMContentLoaded", function() { mostrarTab('familia'); });
+        document.addEventListener("DOMContentLoaded", function() {
+            mostrarTab('familia');
+
+            const urlRecuperar = "{{ url_for('recuperar_contrasena') }}";
+            const recuperarLink = document.querySelector('.recuperar');
+            recuperarLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const correo = prompt('Para recuperar tu contraseña, escribe tu correo institucional:');
+                if (!correo) return;
+                fetch(urlRecuperar, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ correo })
+                })
+                .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        alert(body.message);
+                    } else {
+                        alert(body.error);
+                    }
+                })
+                .catch(() => {
+                    alert('Ocurrió un error al intentar recuperar la contraseña.');
+                });
+            });
+        });
 
         function togglePassword(tipo) {
             const input = document.getElementById("password-" + tipo);

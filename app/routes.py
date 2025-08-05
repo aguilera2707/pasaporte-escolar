@@ -2109,4 +2109,33 @@ def editar_contrasena_admin(admin_id):
             return redirect(url_for("lista_administradores"))
 
     return render_template("editar_contrasena.html", admin=admin)
+
+
+@app.route('/recuperar_contrasena', methods=['POST'])
+def recuperar_contrasena():
+    from flask import request, jsonify
+    from flask_mail import Message
+    from app import mail
+
+    data = request.get_json() or {}
+    correo = data.get('correo', '').strip()
+    if not correo:
+        return jsonify({'error': 'Debes proporcionar tu correo institucional.'}), 400
+
+    familia = Familia.query.filter_by(correo=correo).first()
+    if not familia:
+        return jsonify({'error': 'Ese correo no está registrado.'}), 404
+
+    # Envío de la contraseña por correo
+    asunto = "Recuperación de contraseña - Pasaporte Escolar"
+    cuerpo = (
+        f"Hola {familia.nombre},\n\n"
+        f"Tu contraseña actual es: {familia.password}\n\n"
+        f"Saludos,\n"
+        f"Instituto Moderno Americano"
+    )
+    msg = Message(subject=asunto, recipients=[correo], body=cuerpo)
+    mail.send(msg)
+
+    return jsonify({'message': 'Se ha enviado un correo con tu contraseña al correo proporcionado.'}), 200
         
