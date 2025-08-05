@@ -4,12 +4,13 @@
 :root {
     --rojo-fondo: #af1c1c;
     --rojo-profundo: #850f0f;
-    --amarillo-ima: #e9b800;
-    --amarillo-hover: #ffd93b;
+    --amarillo-ima: #000000;
+    --amarillo-hover: #000000;
     --blanco: #fffdfa;
     --sombra: 0 8px 32px 0 #ae1e1a44;
 }
 
+/* Body y fondo */
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
     background: radial-gradient(ellipse at center, var(--rojo-fondo) 0%, var(--rojo-profundo) 100%);
@@ -21,66 +22,52 @@ body {
     overflow-x: hidden;
 }
 
-/* Fondo y mascotas */
+/* Ocultamos las panteras de fondo */
 .login-bg {
-    position: fixed;
-    left: 0; top: 0; width: 100vw; height: 100vh;
-    z-index: 0;
-    pointer-events: none;
-}
-.login-bg .watermark {
-    position: absolute;
-    left: 50%;
-    bottom: 8vh; /* Más abajo, centrado horizontal */
-    transform: translateX(-50%);
-    opacity: 0.19;
-    width: 360px;
-    max-width: 60vw;
-    z-index: 0;
-    pointer-events: none;
-    filter: drop-shadow(0 2px 16px #e9b80055) drop-shadow(0 0px 12px #fff6);
-}
-.login-bg .mascota {
-    position: absolute;
-    right: 6vw;
-    bottom: 3vh;
-    width: 190px;
-    max-width: 32vw;
-    z-index: 2;
-    opacity: 0.97;
-    filter: drop-shadow(0 4px 16px rgba(50,0,0,0.21));
+    display: none !important;
 }
 
-/* Glassmorphism */
+/* Glassmorphism del contenedor: fondo blanco y borde blanco */
 .contenedor {
-    background: rgba(255,255,255,0.69);
+
+    background: rgba(255,255,255,0.9);
+
+    
+    /* Si quieres conservar un poco de transparencia, usa:
+    background: rgba(255,255,255,0.9);
+    */
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 2.7rem 2rem;
     border-radius: 22px;
     max-width: 430px;
     margin: 4.5rem auto 0 auto;
-    box-shadow: var(--sombra), 0 2px 8px 0 #e9b80030;
-    border: 3px solid var(--amarillo-ima);
+    box-shadow: var(--sombra), 0 2px 8px 0 #08080530;
+    border: 3px solid var(--blanco);
     z-index: 5;
     position: relative;
     animation: fade-in-down 0.85s cubic-bezier(.77,0,.18,1.01);
 }
+
+/* Animación */
 @keyframes fade-in-down {
-    0% { opacity: 0; transform: translateY(-48px) scale(0.97);}
-    100% { opacity: 1; transform: none;}
+    0% { opacity: 0; transform: translateY(-48px) scale(0.97); }
+    100% { opacity: 1; transform: none; }
 }
 
+/* Título principal en negro */
 h1 {
     font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
-    color: var(--amarillo-ima);
+    color: #000000;
     font-size: 2.3rem;
     margin-bottom: 1.5rem;
     font-weight: 700;
     letter-spacing: 1px;
-    text-shadow: 1px 2px 0 #850f0f30, 0 2px 12px #0002;
+    /* Puedes eliminar o ajustar la sombra si lo deseas */
+    text-shadow: 1px 2px 0 #ffffff30, 0 2px 12px #0002;
 }
 
+/* Pestañas */
 .tabs {
     display: flex;
     justify-content: center;
@@ -90,23 +77,24 @@ h1 {
 .tabs button {
     padding: 10px 28px;
     border: none;
-    background: var(--amarillo-ima);
-    color: var(--rojo-profundo);
+    background: #000000;
+    color: #ffffff;
     font-weight: bold;
     border-radius: 7px;
     font-size: 1.1rem;
-    box-shadow: 0 2px 6px #850f0f10;
+    box-shadow: 0 2px 6px #00000020;
     cursor: pointer;
     transition: background 0.22s, color 0.22s, box-shadow 0.25s, transform 0.2s;
 }
-.tabs button.active, .tabs button:hover {
+.tabs button.active,
+.tabs button:hover {
     background: var(--rojo-profundo);
-    color: #fff6cc;
+    color: #ffffff;
     box-shadow: 0 2px 16px #e9b80055, 0 1px 4px #850f0f11;
     transform: translateY(-2px) scale(1.04);
 }
 
-/* Campo con ícono SVG */
+/* Campo con ícono SVG en negro */
 .input-group {
     position: relative;
     margin-bottom: 1.2em;
@@ -118,7 +106,7 @@ h1 {
     transform: translateY(-50%);
     width: 25px;
     height: 25px;
-    fill: #c29500;
+    fill: #000000;
     opacity: 0.88;
     pointer-events: none;
     z-index: 10;
@@ -127,6 +115,7 @@ h1 {
     padding-left: 54px !important;
 }
 
+/* Inputs */
 input {
     display: block;
     margin: 0 auto 0.1em auto;
@@ -137,7 +126,7 @@ input {
     border: 1.8px solid var(--amarillo-ima);
     border-radius: 6px;
     background: #fffdfa;
-    color: #850f0f;
+    color: #030303;
     outline: none;
     transition: border 0.15s, background 0.15s;
     box-sizing: border-box;
@@ -147,9 +136,10 @@ input:focus {
     background: #fffbe0;
 }
 
+/* Botón de envío: negro con texto blanco, cambia a vino */
 button[type="submit"] {
-    background-color: var(--amarillo-ima);
-    color: var(--rojo-profundo);
+    background-color: #000000;
+    color: #ffffff;
     padding: 12px 25px;
     border: none;
     border-radius: 7px;
@@ -157,27 +147,32 @@ button[type="submit"] {
     font-size: 1.09rem;
     font-weight: bold;
     margin-top: 10px;
-    box-shadow: 0 2px 8px #850f0f12;
+    box-shadow: 0 2px 8px #00000020;
     transition: background 0.22s, color 0.22s, box-shadow 0.25s, transform 0.18s;
 }
 button[type="submit"]:hover {
     background: var(--rojo-profundo);
-    color: #fff6cc;
+    color: #ffffff;
     box-shadow: 0 2px 16px #e9b80066;
     transform: scale(1.05) translateY(-2px);
 }
 
+/* Link de recuperar */
 .link.recuperar {
     display: inline-block;
     margin-top: 1em;
     font-size: 1em;
     color: #a5251f;
     opacity: 0.82;
-    text-decoration: underline dotted;
+
     transition: color 0.19s, opacity 0.19s;
 }
-.link.recuperar:hover { color: #e9b800; opacity: 1; }
+.link.recuperar:hover {
+    color: #e9b800;
+    opacity: 1;
+}
 
+/* Mensajes de estado */
 .error, .danger {
     color: #c0392b;
     background: #ffd6d6;
@@ -195,18 +190,22 @@ button[type="submit"]:hover {
 
 /* Responsive */
 @media (max-width: 880px) {
-    .login-bg .watermark { width: 200px; bottom: 10vh; }
-    .login-bg .mascota { width: 110px; }
+    /* ocultamos lo mismo en móvil */
+    .login-bg { display: none !important; }
     .contenedor { margin: 1.5rem auto 0 auto; }
 }
 @media (max-width: 600px) {
     body { padding: 0.4rem; }
-    .contenedor { padding: 1rem; border-radius: 6px; max-width: 99vw; }
+    .contenedor {
+        padding: 1rem;
+        border-radius: 6px;
+        max-width: 99vw;
+    }
     input { width: 100%; }
-    .login-bg .watermark { width: 120px; }
-    .login-bg .mascota { width: 55px; }
     h1 { font-size: 1.25rem; }
 }
+
+/* Footer */
 .footer-login {
     margin-top: 2.5em;
     color: #fffbe8;
@@ -217,25 +216,40 @@ button[type="submit"]:hover {
     text-shadow: 0 1px 4px #850f0f33;
     font-family: 'Segoe UI', Arial, sans-serif;
     user-select: none;
-    pointer-events: none; /* No puede seleccionarse accidentalmente */
+    pointer-events: none;
 }
 
+/* 1) Asegura que todos los SVG de input-group sean negros */
+.input-group svg {
+    fill: #000 !important;
+    stroke: #000 !important;
+}
+
+/* 2) Posiciona el ojo dentro del textbox */
 .campo-password {
     position: relative;
-    display: flex;
-    align-items: center;
 }
 
 .campo-password input {
-    flex: 1;
+    /* ya tenías padding-right: 2.5em; ajusta si hace falta más espacio */
     padding-right: 2.5em;
 }
 
 .toggle-password {
     position: absolute;
-    right: 10px;
-    cursor: pointer;
+    top: 50%;
+    right: 12px;              /* distancia al borde derecho del input */
+    transform: translateY(-50%);
+    color: #000;              /* ojo en negro */
     font-size: 1.2em;
+    cursor: pointer;
+    z-index: 10;
+    /* opcional: background blanco semitransparente para mejor contraste */
+    /* background: rgba(255,255,255,0.5); border-radius: 50%; padding: 2px; */
 }
-
-/* Fin */
+.input-group svg rect,
+.input-group svg path,
+.input-group svg circle {
+stroke: #000 !important;
+fill: #ffffff !important;
+}

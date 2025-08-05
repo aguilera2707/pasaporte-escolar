@@ -800,7 +800,7 @@ def crear_beneficio():
             role=session.get("rol"),
             action="crear",
             entity="Beneficio",
-            details=f"id={beneficio.id}, nombre={beneficio.nombre}"
+            details=f"El administrador “{session.get('nombre_usuario')}” "f"creó el beneficio “{beneficio.nombre}” (ID {beneficio.id})."
         )
         db.session.add(entry)
         db.session.commit()
