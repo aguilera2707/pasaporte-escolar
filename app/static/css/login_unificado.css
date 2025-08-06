@@ -9,7 +9,12 @@
     --blanco: #ffffff;
     --sombra: 0 8px 32px 0 #726969c4;
 }
-
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;           /* quitamos el padding general */
+    overflow: hidden;     /* ocultamos todo overflow */
+}
 /* Body y fondo */
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
