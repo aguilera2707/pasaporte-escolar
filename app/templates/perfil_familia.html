@@ -6,7 +6,17 @@
     <title>Perfil de {{ familia.nombre }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil_familia.css') }}">
 </head>
+<style>
+body {
+    background-image: url("{{ url_for('static', filename='img/PRUPUESTA_PARTE2.jpg') }}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+</style>
 <body>
+
+    
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div id="mensajes-flash">
@@ -28,7 +38,7 @@
         </div>
 
         <div class="qr-section">
-            <h2>Tu código QR</h2>
+            <h1>Tu código QR</h1>
             <div class="qr-wrapper">
                 <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}" alt="Código QR de la familia">
                 <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
