@@ -1109,9 +1109,6 @@ def crear_qr_evento():
 
     return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
 
-
-
-
 @app.route('/escanear_evento/<int:evento_id>')
 def escanear_evento_con_ubicacion(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
@@ -1143,8 +1140,8 @@ def validar_ubicacion_evento():
     if not evento or not familia:
         return jsonify({"error": "Evento o familia no encontrada"}), 404
 
-    # --- 1) Validación de rango de fecha/hora en hora local ---
-    tz         = pytz.timezone("America/Mexico_City")
+    # --- 1) Validación rápida de rango de fecha/hora en hora local ---
+    tz          = pytz.timezone("America/Mexico_City")
     ahora_local = datetime.now(tz)
 
     if evento.valid_from:
@@ -1162,7 +1159,7 @@ def validar_ubicacion_evento():
             msg = vt_local.strftime('%d/%m/%Y %H:%M')
             return jsonify({
                 "error": f"El evento expiró. Válido hasta {msg}",
-                "code": "fuera_de_fecha"
+                "code": "qr_expirado"
             }), 400
 
     # --- 2) Validación de ubicación ---
@@ -1186,19 +1183,17 @@ def validar_ubicacion_evento():
         descripcion=f"Asistencia al evento: {evento.nombre_evento}"
     ))
     db.session.commit()
-    
-    print("[DEBUG] Llamando a enviar_correo_movimiento desde validar_ubicacion_evento")
 
+    print("[DEBUG] Llamando a enviar_correo_movimiento desde validar_ubicacion_evento")
     enviar_correo_movimiento(
-    familia.correo,
-    familia.nombre,
-    evento.puntos,
-    "suma",
-    f"Asistencia al evento: {evento.nombre_evento}"
+        familia.correo,
+        familia.nombre,
+        evento.puntos,
+        "suma",
+        f"Asistencia al evento: {evento.nombre_evento}"
     )
 
     return jsonify({"redirect": url_for("asistencia_exitosa", evento_id=evento.id)})
-
 
 
 @app.route("/asistencia_exitosa/<int:evento_id>")
