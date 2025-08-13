@@ -1,0 +1,213 @@
+/* ======== Paleta institucional ======== */
+:root {
+    --rojo-principal: #bb0404;
+    --rojo-profundo: #850f0f;
+    --dorado: #e9b800;
+    --blanco: #fff;
+    --fondo-crema: #fffdfa;
+    --sombra-roja: rgba(133, 15, 15, 0.3);
+}
+
+/* Fondo y estructura */
+body {
+    min-height: 100vh;
+    background-image: url("{{ url_for('static', filename='img/PRUEBA5.jpg') }}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.admin-contenedor {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px);
+    border-radius: 15px;
+    box-shadow: 0 8px 24px var(--sombra-roja);
+    padding: 2rem;
+    margin: 3rem auto;
+    width: 96%;
+    max-width: 1100px;
+}
+
+/* Títulos */
+h1 {
+    color: var(--rojo-profundo);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+/* Botón volver */
+.btn-volver {
+    display: inline-block;
+    background: var(--rojo-profundo);
+    color: var(--blanco);
+    padding: 0.6rem 1.2rem;
+    border-radius: 7px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.2s ease, transform 0.15s ease;
+    margin-bottom: 1.5rem;
+}
+.btn-volver:hover {
+    background: var(--dorado);
+    color: var(--rojo-profundo);
+    transform: translateY(-2px);
+}
+
+/* Botones principales */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 7px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--rojo-principal);
+    color: var(--blanco);
+}
+.btn-primary:hover {
+    background: var(--dorado);
+    color: var(--rojo-profundo);
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: #f39c12;
+    color: var(--blanco);
+}
+.btn-warning:hover {
+    background: #d68910;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: var(--blanco);
+}
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
+/* Tablas */
+.table-responsive {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--fondo-crema);
+}
+
+th {
+    background: var(--rojo-principal);
+    color: var(--blanco);
+    font-weight: bold;
+    padding: 0.8rem;
+    text-align: left;
+}
+
+td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:hover td {
+    background: #fff6cc;
+}
+
+/* DataTables */
+.dataTables_wrapper {
+    margin-top: 1rem;
+}
+
+.dataTables_filter {
+    margin-bottom: 1rem;
+}
+.dataTables_filter input {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--rojo-profundo);
+    font-size: 0.95rem;
+    background: var(--fondo-crema);
+    color: var(--rojo-profundo);
+}
+.dataTables_filter input:focus {
+    border-color: var(--dorado);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(233, 184, 0, 0.4);
+}
+
+.dataTables_length select {
+    padding: 0.3rem;
+    border-radius: 6px;
+    border: 1px solid var(--rojo-profundo);
+    background: var(--fondo-crema);
+    color: var(--rojo-profundo);
+}
+
+/* Flash mensajes */
+.flash {
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+.flash.success {
+    background: #d4edda;
+    color: #155724;
+}
+.flash.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+/* Botón Editar contraseña */
+.btn-warning {
+    background-color: #000000; /* negro sólido */
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    font-weight: bold;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-warning:hover {
+    background-color: #ff0000; /* rojo */
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+/* Botón Eliminar */
+.btn-danger {
+    background-color: #ff0000; /* rojo sólido */
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    font-weight: bold;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-danger:hover {
+    background-color: #000000; /* negro */
+    color: #ffffff;
+    transform: scale(1.05);
+}

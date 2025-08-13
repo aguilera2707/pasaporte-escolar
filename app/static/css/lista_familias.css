@@ -1,0 +1,179 @@
+/* Fondo */
+body {
+    background-image: url("../img/PRUEBA5.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenedor principal */
+.admin-contenedor {
+    background: rgba(255, 255, 255, 0.92);
+    padding: 2rem;
+    border-radius: 15px;
+    max-width: 1200px;
+    margin: 2rem auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    min-height: 500px; /* Ajusta el valor según el diseño */
+}
+
+/* Botón volver */
+.btn-primary {
+    background-color: #8b0000;
+    color: white;
+    padding: 0.6em 1.2em;
+    border-radius: 7px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+.btn-primary:hover {
+    background-color: black;
+}
+
+/* Formularios */
+.familia-form {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.familia-form input {
+    padding: 0.5em 0.8em;
+    border-radius: 6px;
+    border: 1px solid #bb0404;
+    font-size: 0.95rem;
+    flex: 1;
+}
+.familia-form button {
+    background-color: #bb0404;
+    color: white;
+    border: none;
+    padding: 0.6em 1.2em;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+.familia-form button:hover {
+    background-color: black;
+}
+
+/* Tablas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    overflow: hidden;
+    border-radius: 10px;
+}
+th {
+    background-color: #bb0404;
+    color: white;
+    text-align: left;
+    padding: 0.75em;
+}
+td {
+    padding: 0.75em;
+    border-top: 1px solid #ddd;
+}
+tr:hover td {
+    background-color: #fff3f3;
+}
+
+/* Botones de acciones */
+.acciones {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.acciones a {
+    text-decoration: none;
+    font-weight: bold;
+    padding: 0.4em 0.8em;
+    border-radius: 6px;
+    color: white;
+    background-color: black;
+    transition: background 0.2s ease;
+}
+.acciones a:hover {
+    background-color: #7e0000;
+}
+.sumar {
+    background-color: black;
+    color: white;
+    font-size: 1.2rem;
+    border: none;
+    padding: 0.4em 0.7em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.sumar:hover {
+    background-color: #bb0404;
+}
+.canjear {
+    background-color: #bb0404;
+    color: white;
+    font-size: 1.2rem;
+    border: none;
+    padding: 0.4em 0.7em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.canjear:hover {
+    background-color: black;
+}
+
+/* Mensajes flash */
+.flash {
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+.flash.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+.flash.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+.dataTables_filter {
+    margin-bottom: 10px; /* separa hacia abajo */
+    margin-top: 10px;    /* separa hacia arriba */
+}
+.dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em; /* espacio entre lupa/texto y campo */
+}
+/* Mantener tamaño mínimo de la tabla para que no se encoja */
+table.dataTable {
+    min-height: 300px; /* Ajusta el valor a lo que te guste */
+}
+/* Rellenar espacio de la tabla aunque haya pocas filas */
+.dataTables_wrapper {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+/* Centrar contenido de la columna Acciones */
+td.acciones {
+    text-align: center;
+}
+
+/* Asegurar que los botones estén alineados en el centro */
+.acciones {
+    display: flex;
+    justify-content: center; /* Centra horizontalmente */
+    align-items: center;     /* Centra verticalmente */
+    gap: 0.4em;               /* Espacio entre botones */
+}

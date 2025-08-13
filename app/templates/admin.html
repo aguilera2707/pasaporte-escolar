@@ -95,7 +95,7 @@ body {
                         <td>{{ f.password }}</td>
                         <td>{{ f.puntos }}</td>
                         <td class="acciones">
-                            <a href="{{ url_for('ver_familia', familia_id=f.id) }}">👁️ Ver</a>
+                            <a href="{{ url_for('ver_familia', familia_id=f.id) }}"> Ver</a>
                             <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a>
                             {% if rol == 'admin' %}
                                 <button onclick="sumar({{ f.id }})" class="sumar" title="Sumar puntos">➕</button>

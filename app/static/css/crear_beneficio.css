@@ -1,0 +1,160 @@
+/* ======== Paleta institucional ======== */
+:root {
+    --rojo-principal: #bb0404;
+    --rojo-profundo: #850f0f;
+    --dorado: #000000;
+    --blanco: #fff;
+    --fondo-crema: #fffdfa;
+    --sombra-roja: rgba(133, 15, 15, 0.35);
+}
+
+/* Fondo general */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    color: #222;
+}
+
+/* Contenedor principal */
+.admin-contenedor {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px var(--sombra-roja);
+    margin: 4rem auto 2rem;
+    padding: 2rem 2.2rem;
+    width: 96%;
+    max-width: 670px;
+}
+
+/* Títulos */
+h1, h2 {
+    color: var(--dorado);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Botones generales */
+.btn, .btn-primary {
+    background-color: var(--rojo-principal);
+    color: var(--blanco);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+.btn:hover, .btn-primary:hover {
+    background-color: var(--dorado);
+    color: var(--rojo-profundo);
+    transform: translateY(-2px);
+}
+
+/* Formularios */
+.benef-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.benef-form label {
+    font-weight: bold;
+    color: var(--rojo-profundo);
+}
+.benef-form input {
+    padding: 10px;
+    border: 1.4px solid var(--rojo-principal);
+    border-radius: 7px;
+    font-size: 1rem;
+    background: var(--fondo-crema);
+    color: var(--rojo-profundo);
+}
+.benef-form input:focus {
+    outline: none;
+    border-color: var(--dorado);
+    box-shadow: 0 0 0 3px rgba(233, 184, 0, 0.3);
+}
+
+/* Tablas */
+.table-responsive { overflow-x: auto; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    background: var(--fondo-crema);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(133, 15, 15, 0.2);
+}
+th {
+    background: var(--dorado);
+    color: var(--rojo-profundo);
+    font-weight: 700;
+    padding: 10px;
+}
+td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+tr:hover td { background: #fff6cc; }
+
+/* Botones de acción */
+.btn-edit {
+    background: #2980b9;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-right: 5px;
+}
+.btn-edit:hover {
+    background: #1f6390;
+}
+.btn-delete {
+    background: #e74c3c;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-delete:hover {
+    background: #b81313;
+}
+
+/* Mensajes flash */
+.flash {
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+.flash.success {
+    background: #d4edda;
+    color: #155724;
+}
+.flash.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .admin-contenedor {
+        padding: 1.3rem;
+    }
+    h1, h2 {
+        font-size: 1.3rem;
+    }
+    table, th, td {
+        font-size: 0.9rem;
+    }
+}

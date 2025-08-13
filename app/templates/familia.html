@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
 
-    <a href="{{ url_for('panel_admin') }}">← Volver al panel</a>
+    
+
     <title>Perfil de Familia</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
 </head>
 
 <body>
-
-
+<div class="admin-contenedor">
+    <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
     <h1>Familia: {{ familia.nombre }}</h1>
     <p>Puntos actuales: <strong>{{ familia.puntos }}</strong></p>
 
@@ -103,6 +104,7 @@
         <button type="submit">Registrar</button>
     </form>
     <div id="mensaje-transaccion"></div>
+</div> <!-- cierre admin-contenedor -->
 
     
 

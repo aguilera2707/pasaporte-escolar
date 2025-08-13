@@ -1,0 +1,118 @@
+/* ====== Estilo institucional Crear Admin ====== */
+:root {
+    --rojo-principal: #bb0404;
+    --dorado: rgb(102, 0, 0);
+    --blanco: #fff;
+    --fondo-crema: #fffdfa;
+    --texto-oscuro: #2c3e50;
+}
+
+/* Contenedor central */
+.admin-contenedor {
+    background: rgba(255,255,255,0.96);
+    padding: 2rem;
+    border-radius: 15px;
+    max-width: 600px;
+    margin: 3rem auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+/* Título */
+.admin-contenedor h1 {
+    text-align: center;
+    color: var(--rojo-principal);
+    margin-bottom: 1.5rem;
+}
+
+/* Labels */
+.benef-form label {
+    display: block;
+    margin: 0.8rem 0 0.3rem;
+    font-weight: bold;
+    color: var(--texto-oscuro);
+}
+
+/* Inputs y Select */
+.benef-form input,
+.benef-form select {
+    width: 100%;
+    padding: 0.65rem;
+    border-radius: 7px;
+    border: 1.4px solid var(--rojo-principal);
+    font-size: 1rem;
+    background: var(--fondo-crema);
+    color: var(--texto-oscuro);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+.benef-form input:focus,
+.benef-form select:focus {
+    border-color: var(--dorado);
+    box-shadow: 0 0 0 3px rgba(233,184,0,0.25);
+    outline: none;
+}
+
+/* Botón principal */
+.benef-form button {
+    display: block;
+    width: 100%;
+    margin-top: 1.3rem;
+    padding: 0.75rem;
+    background: var(--rojo-principal);
+    color: var(--blanco);
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.benef-form button:hover {
+    background: var(--dorado);
+    color: var(--rojo-principal);
+    transform: translateY(-2px);
+}
+
+/* Botón volver */
+.btn-edit {
+    display: inline-block;
+    background: var(--dorado);
+    color: #ffffff;
+    padding: 0.6rem 1.2rem;
+    border-radius: 7px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-edit:hover {
+    background: var(--rojo-principal);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+/* Mensajes flash */
+.flash {
+    padding: 10px;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    font-weight: bold;
+}
+.flash.success {
+    background: #d4edda;
+    color: #155724;
+}
+.flash.error {
+    background: #f8d7da;
+    color: #ffffff;
+}
+body {
+    min-height: 100vh; /* altura mínima igual a la pantalla */
+    background-image: url("{{ url_for('static', filename='img/PRUEBA5.jpg') }}");
+    background-size: cover; /* cubre toda la pantalla */
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0; /* elimina márgenes */
+    display: flex;
+    align-items: center; /* centra verticalmente el contenido */
+    justify-content: center; /* centra horizontalmente */
+}
+
