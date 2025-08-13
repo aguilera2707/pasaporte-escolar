@@ -15,6 +15,7 @@ class Familia(db.Model):
     correo = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     puntos = db.Column(db.Integer, default=0)
+    qr_version = db.Column(db.Integer, default=1)
 
     def __repr__(self):
         return f'<Familia {self.nombre} – {self.puntos} puntos>'
