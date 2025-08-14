@@ -445,3 +445,64 @@ td.acciones {
     gap: 0.4em;               /* Espacio entre botones */
 }
 
+/* Contenedor de acciones */
+td.acciones {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Estilo base para todos los botones/enlaces */
+td.acciones a,
+td.acciones button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Ver */
+td.acciones a:first-child {
+    background-color: #3498db;
+    color: #fff;
+}
+td.acciones a:first-child:hover {
+    background-color: #217dbb;
+}
+
+/* Editar */
+td.acciones a:nth-child(2) {
+    background-color: #f39c12;
+    color: #fff;
+}
+td.acciones a:nth-child(2):hover {
+    background-color: #c87f0a;
+}
+
+/* Sumar puntos */
+td.acciones .sumar {
+    background-color: #2ecc71;
+    color: #fff;
+    font-size: 1rem;
+}
+td.acciones .sumar:hover {
+    background-color: #27ae60;
+}
+
+/* Canjear puntos */
+td.acciones .canjear {
+    background-color: #e74c3c;
+    color: #fff;
+    font-size: 1rem;
+}
+td.acciones .canjear:hover {
+    background-color: #c0392b;
+}
