@@ -89,42 +89,43 @@ body {
     cursor: pointer;
     box-shadow: 0 2px 6px #0002;
 }
+/* Barra de navegación estilo franja negra translúcida */
 .admin-navbar {
-    background: rgba(0, 0, 0, 0.95);
-    border-radius: 12px;
-    margin-bottom: 2.3rem;
-    padding: 1.2rem 1.5rem;
-    box-shadow: 0 3px 14px var(--sombra-roja);
-    transition: all 0.3s ease-in-out;
+    background-color: rgba(0, 0, 0, 0.85); /* más oscuro */
+    backdrop-filter: blur(6px); /* difuminado para efecto vidrio */
+    padding: 18px 35px; /* más alto y ancho */
+    border-radius: 0; /* sin esquinas */
+    display: flex;
+    align-items: center; /* centra verticalmente los enlaces */
+    min-height: 60px; /* altura mínima para más grosor */
 }
+
 .admin-navbar ul {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.1rem 1.3rem;
-    justify-content: center;
+    gap: 25px;
 }
+
+.admin-navbar ul li {
+    display: inline-block;
+}
+
 .admin-navbar ul li a {
-    background: var(--dorado);
-    color: var(--rojo-profundo);
-    padding: 0.52em 1.2em;
-    border-radius: 8px;
-    font-weight: bold;
-    transition: background 0.2s, color 0.2s, transform 0.12s;
-    font-size: 1.04rem;
-    text-shadow: 0 1px 0 rgba(255, 0, 0, 0.533);
-    box-shadow: 0 2px 4px var(--rojo-profundo)10;
-    letter-spacing: 0.04em;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
+    color: white !important;
+    text-decoration: none !important; /* quita subrayado */
+    font-size: 17px;
+    font-weight: 500;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    transition: color 0.3s ease, transform 0.2s ease;
 }
+
 .admin-navbar ul li a:hover {
-    background: var(--rojo-profundo);
-    color: #ce0000;
-    transform: translateY(-2px) scale(1.07);
+    color: #ffd700 !important; /* dorado al hover */
+    transform: scale(1.05); /* pequeño zoom al pasar el mouse */
 }
 
 /* Navbar móvil */
@@ -442,4 +443,66 @@ td.acciones {
     justify-content: center; /* Centra horizontalmente */
     align-items: center;     /* Centra verticalmente */
     gap: 0.4em;               /* Espacio entre botones */
+}
+
+/* Acciones */
+td.acciones {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Botones y enlaces dentro de acciones */
+td.acciones a,
+td.acciones button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+/* Ver */
+td.acciones a:first-child {
+    background-color: #3498db;
+    color: #fff;
+}
+td.acciones a:first-child:hover {
+    background-color: #217dbb;
+}
+
+/* Editar */
+td.acciones a:nth-child(2) {
+    background-color: #f39c12;
+    color: #fff;
+}
+td.acciones a:nth-child(2):hover {
+    background-color: #c87f0a;
+}
+
+/* Sumar puntos */
+td.acciones .sumar {
+    background-color: #2ecc71;
+    color: white;
+    font-size: 1rem;
+}
+td.acciones .sumar:hover {
+    background-color: #27ae60;
+}
+
+/* Canjear puntos */
+td.acciones .canjear {
+    background-color: #e74c3c;
+    color: white;
+    font-size: 1rem;
+}
+td.acciones .canjear:hover {
+    background-color: #c0392b;
 }
