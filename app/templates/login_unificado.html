@@ -129,5 +129,12 @@ body {
             icon.textContent = isPassword ? "🙈" : "👁";
         }
     </script>
+<script>
+setInterval(() => {
+    fetch("/status")
+        .then(() => console.log("Ping a /status"))
+        .catch(err => console.error("Error en ping:", err));
+}, 5 * 60 * 1000); // cada 5 minutos
+</script>
 </body>
 </html>

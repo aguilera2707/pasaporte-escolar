@@ -91,9 +91,18 @@ body {
                             <p class="fecha">{{ t.fecha.strftime('%d/%m/%Y %H:%M') }}</p>
                             <p class="detalle">
                                 <strong>
-                                    {{ '✅ Ganaste' if t.tipo == 'suma' else '🔻 Canjeaste' }}
+                                    {% if t.tipo == 'suma' %}
+                                        ✅ Ganaste
+                                    {% elif t.tipo == 'canje' %}
+                                        🔻 Canjeaste
+                                    {% elif t.tipo == 'penalizacion' %}
+                                        ⚠️ Penalización de
+                                    {% else %}
+                                        {{ t.tipo }}
+                                    {% endif %}
                                     {{ t.puntos }} puntos
                                 </strong>
+
                             </p>
                             <p class="descripcion">{{ t.descripcion or 'Sin descripción' }}</p>
                         </div>

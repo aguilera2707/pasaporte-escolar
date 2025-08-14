@@ -350,33 +350,59 @@ def registrar_transaccion():
     if not familia:
         return jsonify({'error': 'Familia no encontrada'}), 404
 
+    # Hora de Mérida
+    hora_mexico = datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
+
     if tipo == 'suma':
         familia.puntos += puntos
+
     elif tipo == 'canje':
         if familia.puntos < puntos:
             return jsonify({'error': 'Puntos insuficientes para canjear'}), 400
         familia.puntos -= puntos
+
+    elif tipo == 'penalizacion':
+        puntos = abs(puntos) * -1  # siempre restar
+        familia.puntos += puntos  # restar puntos
+
+        nueva_transaccion = Transaccion(
+            familia_id=familia.id,
+            tipo="penalizacion",
+            puntos=puntos,
+            descripcion=descripcion,
+            fecha=hora_mexico
+        )
+        db.session.add(nueva_transaccion)
+        db.session.commit()
+
+        # Enviar correo con asunto de penalización
+        enviar_correo_movimiento(
+            familia.correo,
+            "PENALIZACIÓN",
+            f"Se ha aplicado una penalización de {abs(puntos)} puntos.\nMotivo: {descripcion or 'No especificado'}"
+        )
+
+        return jsonify({"mensaje": f"Se penalizó con {abs(puntos)} puntos."})
+
     else:
         return jsonify({'error': 'Tipo de transacción inválido'}), 400
 
-    # --- AGREGAR REGISTRO DE HISTORIAL ---
-    hora_mexico = datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
+    # --- Registro de historial para suma o canje ---
     nueva_transaccion = Transaccion(
-    familia_id=familia_id,
-    tipo=tipo,
-    puntos=puntos if tipo == 'suma' else -puntos,
-    descripcion=descripcion,
-    fecha=hora_mexico
-)
+        familia_id=familia_id,
+        tipo=tipo,
+        puntos=puntos if tipo == 'suma' else -puntos,
+        descripcion=descripcion,
+        fecha=hora_mexico
+    )
 
     db.session.add(nueva_transaccion)
-
     db.session.commit()
-    
-    
-    enviar_correo_movimiento(familia.correo, familia.nombre, abs(puntos), tipo, descripcion)
-    return jsonify({'mensaje': 'Transacción registrada con éxito', 'puntos_restantes': familia.puntos}), 200
 
+    # Enviar correo automático para suma/canje
+    enviar_correo_movimiento(familia.correo, familia.nombre, abs(puntos), tipo, descripcion)
+
+    return jsonify({'mensaje': 'Transacción registrada con éxito', 'puntos_restantes': familia.puntos}), 200
 
 
     
@@ -472,8 +498,9 @@ def registrar_transaccion_web(familia_id):
     if not familia:
         return jsonify({"error": "Familia no encontrada"}), 404
 
-    if tipo not in ['suma', 'canje']:
-        return jsonify({"error": "Tipo de transacción no válido"}), 400
+    if tipo not in ['suma', 'canje', 'penalizacion']:
+        return jsonify({'error': 'Tipo de transacción no válido'}), 400
+
 
     if tipo == 'canje' and puntos > familia.puntos:
         return jsonify({"error": "No tienes suficientes puntos"}), 400
@@ -2203,4 +2230,8 @@ def recuperar_contrasena():
     mail.send(msg)
 
     return jsonify({'message': 'Se ha enviado un correo con tu contraseña al correo proporcionado.'}), 200
-        
+
+
+@app.route("/status")
+def status():
+    return {"status": "ok"}, 200        

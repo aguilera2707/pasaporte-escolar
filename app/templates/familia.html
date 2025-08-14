@@ -37,6 +37,8 @@
             <option value="">-- Todos --</option>
             <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Acreditación</option>
             <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
+            <option value="penalizacion" {% if request.args.get('tipo') == 'penalizacion' %}selected{% endif %}>Penalización</option>
+
         </select>
 
         <label for="fecha_inicio">Desde:</label>
@@ -86,13 +88,17 @@
     <h2>Registrar transacción</h2>
     <form id="transaccionForm" class="transaction-form">
         <label for="tipo_reg">Tipo:</label>
-        {% if rol == 'admin' %}
+            {% if rol == 'admin' %}
         <select name="tipo" id="tipo_reg" required>
-        {% if rol == 'admin' %}
+            {% if rol in ['admin', 'supervisor'] %}
         <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Suma</option>
-        {% endif %}
-        <option value="canje" {% if request.args.get('tipo') == 'canje' or rol != 'admin' %}selected{% endif %}>Canje</option>
-    </select>
+        <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
+        <option value="penalizacion" {% if request.args.get('tipo') == 'penalizacion' %}selected{% endif %}>Penalización</option>
+
+            {% else %}
+        <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
+            {% endif %}
+</select>
 
         {% else %}
         <input type="hidden" name="tipo" value="canje">
