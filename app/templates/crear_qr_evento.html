@@ -26,7 +26,7 @@ body {
         {% endif %}
         {% endwith %}
 
-        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-bottom: 1.6em;">← Volver al panel</a>
+        <a href="{{ url_for('panel_admin') }}" class="btn-volver" style="margin-bottom: 1.6em;">← Volver al panel</a>
 
         <h1>Crear QR para Evento</h1>
 
@@ -63,44 +63,69 @@ body {
         </form>
 
         <h2 style="margin-top:2.4em;">Eventos existentes</h2>
-        <div class="table-responsive">
-            <table id="tabla-eventos">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Puntos</th>
-                        <th>Validez</th>
-                        <th>Ubicación</th>
-                        <th>QR</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for e in eventos %}
-                    <tr>
-                        <td>{{ e.nombre_evento }}</td>
-                        <td>{{ e.puntos }}</td>
-                        <td>
-                            {% if e.valid_from %}desde {{ e.valid_from.strftime('%d/%m %H:%M') }}{% endif %}
-                            {% if e.valid_to %} hasta {{ e.valid_to.strftime('%d/%m %H:%M') }}{% endif %}
-                        </td>
-                        <td>{{ 'Sí' if e.requiere_ubic else 'No' }}</td>
-                        <td>
-                            <a href="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
-                                target="_blank" title="Ver QR a tamaño real">
-                                <img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
-                                    width="44" style="cursor:pointer;">
-                            </a>
-                        </td>
-                        <td class="acciones">
-                            <a href="{{ url_for('editar_evento', evento_id=e.id) }}">✏️ Editar</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+
+<form method="POST" action="{{ url_for('eliminar_eventos_masivamente') }}" id="form-eliminar-masivo">
+    <div style="margin-bottom: 1em;">
+        
+            <button type="submit" class="btn-eliminar">🗑 Eliminar seleccionados</button>
+        
     </div>
+
+    <div class="table-responsive">
+        <table id="tabla-eventos">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Nombre</th>
+                    <th>Puntos</th>
+                    <th>Validez</th>
+                    <th>Ubicación</th>
+                    <th>QR</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in eventos %}
+                <tr>
+                    <td><input type="checkbox" name="evento_ids" value="{{ e.id }}"></td>
+                    <td>{{ e.nombre_evento }}</td>
+                    <td>{{ e.puntos }}</td>
+                    <td>
+                        {% if e.valid_from %}desde {{ e.valid_from.strftime('%d/%m %H:%M') }}{% endif %}
+                        {% if e.valid_to %} hasta {{ e.valid_to.strftime('%d/%m %H:%M') }}{% endif %}
+                    </td>
+                    <td>{{ 'Sí' if e.requiere_ubic else 'No' }}</td>
+                    <td>
+                        <a href="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
+                            target="_blank" title="Ver QR a tamaño real">
+                            <img src="{{ url_for('static', filename='qr_eventos/' ~ e.qr_filename) }}"
+                                width="44" style="cursor:pointer;">
+                        </a>
+                    </td>
+                    <td class="acciones">
+                        <a href="{{ url_for('editar_evento', evento_id=e.id) }}">✏️ Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<script>
+document.getElementById('select-all').addEventListener('click', function() {
+    const checkboxes = document.querySelectorAll('input[name="evento_ids"]');
+    checkboxes.forEach(chk => chk.checked = this.checked);
+});
+
+function confirmarEliminacion() {
+    return confirm("⚠️ ¿Seguro que deseas eliminar los eventos seleccionados? Esta acción no se puede deshacer.");
+}
+</script>
+
+
+
+    
     <script>
     function llenarCoordenadas() {
         const [lat, lon] = document.getElementById('lugar_frecuente').value.split(',');

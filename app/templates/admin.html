@@ -127,7 +127,7 @@ body {
             <a href="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" target="_blank">
                 <img src="{{ url_for('static', filename='qr_eventos/' + ultimo_evento.qr_filename) }}" width="200" loading="lazy" />
             </a><br />
-            <a href="{{ url_for('descargar_pdf_qr_evento', evento_id=ultimo_evento.id) }}" class="btn btn-primary">📥 Descargar QR (PDF)</a>
+            <a href="{{ url_for('descargar_pdf_qr_evento', evento_id=ultimo_evento.id) }}" class="btn btn-volver">📥 Descargar QR (PDF)</a>
             <form action="{{ url_for('eliminar_evento', evento_id=ultimo_evento.id) }}" method="post" style="display:inline;">
                 <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="btn btn-danger">🗑 Eliminar</button>
             </form>
@@ -138,7 +138,7 @@ body {
 
     <hr />
 
-    <button onclick="toggleEventos()" class="btn btn-primary">📂 Ver eventos anteriores</button>
+    <button onclick="toggleEventos()" class="btn-volver">📂 Ver eventos anteriores</button>
     <div id="eventos-anteriores" style="display: none; margin-top: 20px;">
         {% for evento in otros_eventos %}
         <div class="evento">
@@ -219,13 +219,14 @@ $(document).ready(function () {
         lengthMenu: [5, 10, 20, 50, 100],
         dom: 'Bfrtip',
         buttons: [
-            {
-                extend: 'excelHtml5',
-                text: '📥 Exportar a Excel',
-                title: 'Lista de Familias',
-                exportOptions: { columns: ':visible:not(:last-child)' }
-            }
-        ]
+        {
+            extend: 'excelHtml5',
+            text: '<i class="fas fa-file-excel"></i> Exportar a Excel',
+            className: 'btn-excel',
+            title: 'Lista de Familias',
+            exportOptions: { columns: ':visible:not(:last-child)' }
+        }
+]
     });
 });
 

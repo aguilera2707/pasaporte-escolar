@@ -8,6 +8,25 @@
     --sombra-roja: #850f0f44;
 }
 
+a.btn-volver,
+button.btn-volver {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 10px 18px;
+    background-color: #b71c1c !important; /* Rojo institucional */
+    color: white !important;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+a.btn-volver:hover,
+button.btn-volver:hover {
+    background-color: #8b0000 !important;
+    transform: scale(1.05);
+}
+
 /* Fondo y glassmorphism */
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -91,8 +110,8 @@ body {
 }
 /* Barra de navegación estilo franja negra translúcida */
 .admin-navbar {
-    background-color: rgba(0, 0, 0, 0.85); /* más oscuro */
-    backdrop-filter: blur(2px); /* difuminado para efecto vidrio */
+    background-color: rgba(0, 0, 0, 0.8); /* negro 60% opaco */
+    backdrop-filter: blur(5px); /* efecto vidrio difuminado */
     padding: 18px 35px; /* más alto y ancho */
     border-radius: 0; /* sin esquinas */
     display: flex;
@@ -505,4 +524,26 @@ td.acciones .canjear {
 }
 td.acciones .canjear:hover {
     background-color: #c0392b;
+}
+.btn-excel {
+    background-color: #1d6f42 !important; /* Verde Excel */
+    color: white !important;
+    font-weight: bold;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.btn-excel:hover {
+    background-color: #155d35 !important;
+    transform: scale(1.05);
+}
+
+.btn-excel:active {
+    transform: scale(0.97);
 }

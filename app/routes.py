@@ -2234,4 +2234,34 @@ def recuperar_contrasena():
 
 @app.route("/status")
 def status():
-    return {"status": "ok"}, 200        
+    return {"status": "ok"}, 200
+
+@app.route("/eliminar_eventos_masivamente", methods=["POST"])
+@login_requerido_admin
+def eliminar_eventos_masivamente():
+    ids = request.form.getlist("evento_ids")
+
+    if ids:
+        for evento_id in ids:
+            evento = EventoQR.query.get(evento_id)
+            if evento:
+                # Eliminar registros hijos primero
+                registros = EventoQRRegistro.query.filter_by(evento_id=evento.id).all()
+                for reg in registros:
+                    db.session.delete(reg)
+
+                # Eliminar archivo QR si existe
+                if evento.qr_filename:
+                    qr_path = os.path.join(app.static_folder, "qr_eventos", evento.qr_filename)
+                    if os.path.exists(qr_path):
+                        os.remove(qr_path)
+
+                # Eliminar el evento
+                db.session.delete(evento)
+
+        db.session.commit()
+        flash(f"{len(ids)} evento(s) eliminados correctamente.", "success")
+    else:
+        flash("No seleccionaste ningún evento.", "error")
+
+    return redirect(url_for("crear_qr_evento"))

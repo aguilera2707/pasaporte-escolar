@@ -158,3 +158,21 @@ tr:hover td { background: #fff6cc; }
         font-size: 0.9rem;
     }
 }
+/* ======= Botón Volver ======= */
+.btn-volver {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 10px 18px;
+    background-color: #b71c1c; /* Rojo institucional */
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn-volver:hover {
+    background-color: #8b0000;
+    transform: scale(1.05);
+}
+

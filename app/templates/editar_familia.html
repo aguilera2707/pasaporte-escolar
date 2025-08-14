@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Editar Familia</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/crear.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/editar_familia.css') }}">
 </head>
 <style>
 body {
@@ -15,7 +15,14 @@ body {
 </style>
 <body>
     <div class="admin-bg"></div>
+
+
     <div class="admin-contenedor">
+
+
+        <div style="text-align:left; margin-top:1em;">
+            <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
+        </div>
         <h1>Editar Familia</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -41,9 +48,7 @@ body {
             <button type="submit">Actualizar</button>
         </form>
 
-        <div style="text-align:center; margin-top:1em;">
-            <a href="{{ url_for('panel_admin') }}" class="btn-edit">← Volver al panel</a>
-        </div>
+        
     </div>
     <script>
         setTimeout(() => {

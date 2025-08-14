@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Editar Evento</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/crear_qr_evento.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/editar_evento.css') }}">
 </head>
 <style>
 body {
@@ -15,9 +15,12 @@ body {
 </style>
 <body>
     <h2>Editar Evento</h2>
-    <a href="{{ url_for('crear_qr_evento') }}" class="btn-volver">← Volver al panel</a>
+    
 
 <form method="POST">
+
+
+    <a href="{{ url_for('crear_qr_evento') }}" class="btn-volver">← Volver al panel</a>
     <label>Nombre del evento:</label>
     <input type="text" name="nombre_evento" required value="{{ evento.nombre_evento }}">
 

@@ -6,6 +6,25 @@ body {
     color: #2c3e50;
 }
 
+a.btn-volver,
+button.btn-volver {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 10px 18px;
+    background-color: #b71c1c !important; /* Rojo institucional */
+    color: white !important;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+a.btn-volver:hover,
+button.btn-volver:hover {
+    background-color: #8b0000 !important;
+    transform: scale(1.05);
+}
+
 h1, h2 {
     color: #2c3e50;
     text-align: center;

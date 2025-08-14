@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Puntos Masivos - Cuponera Escolar</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/puntos_masivos.css') }}" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 </head>
 <style>
@@ -17,7 +17,7 @@ body {
 <body>
     <div class="admin-bg"></div>
     <div class="admin-contenedor">
-        <a href="{{ url_for('panel_admin') }}" class="btn-primary" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
+        <a href="{{ url_for('panel_admin') }}" class="btn-volver" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
         <h1>Puntos Masivos</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -75,6 +75,7 @@ body {
         </form>
         
     </div>
+
 
     <!-- jQuery y DataTables -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
