@@ -2265,3 +2265,68 @@ def eliminar_eventos_masivamente():
         flash("No seleccionaste ningún evento.", "error")
 
     return redirect(url_for("crear_qr_evento"))
+
+
+
+from flask import send_file
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+@app.route('/descargar_qr/<int:familia_id>')
+@login_requerido_admin
+def descargar_qr_admin(familia_id):
+    familia = Familia.query.get_or_404(familia_id)
+    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia.id}.png')
+
+    if not os.path.exists(qr_path):
+        flash("El QR no existe", "error")
+        return redirect(url_for('familia', familia_id=familia.id))
+
+    # Generar PDF temporal
+    pdf_path = os.path.join(app.root_path, f"temp_qr_{familia.id}.pdf")
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(300, 750, f"QR - {familia.nombre}")
+    c.drawImage(qr_path, 200, 500, width=200, height=200)
+    c.showPage()
+    c.save()
+
+    return send_file(pdf_path, as_attachment=True,
+                    download_name=f"QR_{familia.nombre.replace(' ', '_')}.pdf")
+
+from textwrap import wrap
+
+@app.route('/descargar_qr_pdf/<int:familia_id>')
+@login_requerido_admin
+def descargar_qr_pdf(familia_id):
+    familia = Familia.query.get_or_404(familia_id)
+    
+    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia.id}.png')
+    if not os.path.exists(qr_path):
+        flash("El QR no existe", "error")
+        return redirect(url_for('familia', familia_id=familia.id))
+
+    pdf_path = os.path.join(app.root_path, f"QR_{familia.id}.pdf")
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+
+    # Definir fuente y tamaño
+    c.setFont("Helvetica-Bold", 20)
+
+    # Envolver texto si es muy largo
+    max_width_chars = 20  # Máximo de caracteres por línea
+    nombre_familia = familia.nombre
+    nombre_lineas = wrap(nombre_familia, max_width_chars)
+
+    # Calcular posición inicial arriba del QR
+    start_y = 750
+    for i, linea in enumerate(nombre_lineas):
+        c.drawCentredString(300, start_y - (i * 22), linea)  # 22 px de espacio entre líneas
+
+    # Dibujar QR más abajo
+    qr_y_position = start_y - (len(nombre_lineas) * 22) - 20
+    c.drawImage(qr_path, 150, qr_y_position - 300, width=300, height=300)
+
+    c.showPage()
+    c.save()
+
+    return send_file(pdf_path, as_attachment=True, download_name=f"QR_{nombre_familia.replace(' ', '_')}.pdf")

@@ -19,9 +19,18 @@
     <div class="qr-container">
         <h3>Código QR:</h3>
         <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}?v={{ familia.qr_version or 1 }}" alt="QR">
-        <form action="{{ url_for('generar_o_regenerar_qr', familia_id=familia.id) }}" method="POST" style="margin-top: 1em;">
+        <form action="{{ url_for('generar_o_regenerar_qr', familia_id=familia.id) }}" 
+            method="POST" 
+            style="margin-top: 1em;"
+            onsubmit="return confirm('⚠️ ¿Estás seguro? Esto anulará el QR anterior.')">
             <button type="submit" class="btn-export">Generar/Actualizar código QR</button>
         </form>
+
+        <a href="{{ url_for('descargar_qr_pdf', familia_id=familia.id) }}"
+            class="btn-volver"
+            style="margin-left: 10px;">
+            Descargar QR (PDF)
+        </a>
     </div>
 
     <!-- Botón Exportar historial -->
