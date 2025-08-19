@@ -52,7 +52,7 @@ class Transaccion(db.Model):
 class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(512), nullable=False)
     rol = db.Column(db.String(20), default='admin')  # 'admin' o 'supervisor'
 
     def set_password(self, password):
