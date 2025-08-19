@@ -13,3 +13,4 @@ geopy
 reportlab
 openpyxl
 Flask-Mail
+psycopg2-binary
