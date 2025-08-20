@@ -23,7 +23,7 @@
             method="POST" 
             style="margin-top: 1em;"
             onsubmit="return confirm('⚠️ ¿Estás seguro? Esto anulará el QR anterior.')">
-            <button type="submit" class="btn-export">Generar/Actualizar código QR</button>
+            <button type="submit" class="btn-volver">Generar/Actualizar código QR</button>
         </form>
 
         <a href="{{ url_for('descargar_qr_pdf', familia_id=familia.id) }}"

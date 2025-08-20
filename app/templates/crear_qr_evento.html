@@ -104,6 +104,7 @@ body {
                     </td>
                     <td class="acciones">
                         <a href="{{ url_for('editar_evento', evento_id=e.id) }}">✏️ Editar</a>
+                        <a href="{{ url_for('historial_escaneos_evento', evento_id=e.id) }}">📋 Historial</a>
                     </td>
                 </tr>
                 {% endfor %}

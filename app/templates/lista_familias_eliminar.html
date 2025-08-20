@@ -19,6 +19,17 @@ body {
     <div class="admin-contenedor">
         <a href="{{ url_for('panel_admin') }}" class="btn-volver">← Volver al panel</a>
         <h1>👨‍👩‍👧 Familias Registradas</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="mensajes-flash">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+        
         <form id="form-eliminar-masivo"
             method="POST"
             action="{{ url_for('eliminar_familias_masivo') }}"

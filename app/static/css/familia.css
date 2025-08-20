@@ -63,7 +63,7 @@ p {
 /* Botón exportar y generar QR */
 .btn-export {
     display: inline-block;
-    background: var(--rojo-principal);
+    background: #1d6f42;
     color: var(--blanco);
     padding: 0.5em 1.2em;
     border-radius: 7px;

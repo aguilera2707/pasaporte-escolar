@@ -175,4 +175,18 @@ tr:hover td { background: #fff6cc; }
     background-color: #8b0000;
     transform: scale(1.05);
 }
+/* Celda de acciones en la tabla */
+td.acciones {
+    display: flex;
+    gap: 8px;          /* Espacio entre botones */
+    justify-content: center;
+    flex-wrap: wrap;   /* Si no caben en una línea, que salten abajo */
+}
+
+/* Ajuste de botones para que no se deformen */
+.btn-edit, .btn-delete {
+    flex: 0 0 auto;     /* Evita que se estiren o encojan */
+    min-width: 80px;    /* Asegura un ancho mínimo */
+    text-align: center; /* Texto centrado */
+}
 

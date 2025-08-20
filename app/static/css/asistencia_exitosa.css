@@ -1,22 +1,88 @@
+/* ======== Paleta institucional ======== */
+:root {
+    --rojo-principal: #bb0404;
+    --rojo-profundo: #850f0f;
+    --negro: #000;
+    --blanco: #fff;
+    --gris-fondo: #f5f5f5;
+}
+
+/* Fondo general */
 body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 50px;
-            background-color: #f5f5f5;
-        }
-        .mensaje {
-            background-color: #fff;
-            border-radius: 10px;
-            display: inline-block;
-            padding: 30px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .mensaje h1 {
-            color: #28a745;
-        }
-        .mensaje p {
-            font-size: 18px;
-        }
-        .mensaje .alerta {
-            color: #e67e22;
-        }
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;             /* 🔥 ocupa toda la pantalla */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--gris-fondo);
+    overflow: hidden;          /* 🚫 elimina scroll innecesario */
+}
+
+/* Caja de mensaje */
+.mensaje {
+    background-color: var(--blanco);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    max-width: 650px;
+    width: 92%;
+    text-align: center;
+}
+
+/* Título (exito o alerta) */
+.mensaje h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--rojo-principal);
+}
+
+.mensaje .alerta {
+    color: var(--rojo-profundo);
+}
+
+/* Texto */
+.mensaje p {
+    font-size: 1.2rem;
+    margin: 0.6rem 0;
+    color: var(--negro);
+    line-height: 1.5;
+}
+
+/* Botón */
+.mensaje a {
+    display: inline-block;
+    width: 100%;
+    margin-top: 1.8rem;
+    padding: 14px;
+    background: var(--rojo-principal);
+    color: var(--blanco);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.mensaje a:hover {
+    background: var(--rojo-profundo);
+    transform: scale(1.03);
+}
+
+/* 📱 Ajuste en pantallas pequeñas */
+@media (max-width: 600px) {
+    .mensaje {
+        padding: 2rem;
+    }
+    .mensaje h1 {
+        font-size: 2.3rem;
+    }
+    .mensaje p {
+        font-size: 1.3rem;
+    }
+    .mensaje a {
+        font-size: 1.4rem;
+        padding: 16px;
+    }
+}

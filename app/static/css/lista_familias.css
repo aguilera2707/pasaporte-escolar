@@ -195,3 +195,21 @@ td.acciones {
     align-items: center;     /* Centra verticalmente */
     gap: 0.4em;               /* Espacio entre botones */
 }
+.flash {
+    padding: 10px 15px;
+    margin: 10px auto;
+    border-radius: 6px;
+    font-weight: bold;
+    text-align: center;
+    max-width: 600px;
+}
+.flash.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.flash.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}

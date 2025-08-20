@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Asistencia registrada</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia_exitosa.css') }}">
 </head>
 <body>
     <div class="mensaje">
@@ -17,7 +17,7 @@
             <p>Se han sumado <strong>{{ evento.puntos }}</strong> puntos a tu cuenta.</p>
         {% endif %}
         <br><br>
-        <a href="{{ url_for('perfil_familia', familia_id=familia.id) }}">Ver mi perfil</a>
+        <a href="{{ url_for('perfil_familia', familia_id=familia.id) }}">Volver a mi perfil</a>
     </div>
 </body>
 </html>

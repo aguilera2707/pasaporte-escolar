@@ -1,0 +1,139 @@
+:root {
+    --rojo-principal: #bb0404;
+    --rojo-oscuro: #850f0f;
+    --negro: #000;
+    --blanco: #fff;
+    --gris-claro: #f5f5f5;
+    --sombra: rgba(0,0,0,0.15);
+}
+
+/* Fondo institucional */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: url("../img/PRUEBA5.jpg") center/cover no-repeat fixed;
+}
+
+/* Contenedor central */
+.admin-contenedor {
+    max-width: 1100px;
+    margin: 2rem auto;
+    background: rgba(255, 255, 255, 0.97);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px var(--sombra);
+}
+
+/* Títulos */
+h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--rojo-oscuro);
+    margin-bottom: 1.2rem;
+}
+
+/* Botones */
+a.btn, .btn-primary {
+    display: inline-block;
+    background: #1d6f42;
+    color: var(--blanco);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    text-decoration: none;
+    margin: 0.5rem 0;
+    transition: background 0.3s ease;
+}
+a.btn:hover, .btn-primary:hover {
+    background: var(--negro);
+}
+
+/* ======= Botón Volver ======= */
+.btn-volver {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 10px 18px;
+    background-color: #b71c1c; /* Rojo institucional */
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn-volver:hover {
+    background-color: #8b0000;
+    transform: scale(1.05);
+}
+
+/* Tabla */
+table.dataTable {
+    width: 100% !important;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--blanco);
+    box-shadow: 0 4px 12px var(--sombra);
+}
+table.dataTable th {
+    background: var(--rojo-principal);
+    color: var(--blanco);
+    padding: 12px;
+    font-size: 1rem;
+}
+table.dataTable td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+table.dataTable tr:nth-child(even) td {
+    background: #fafafa;
+}
+
+/* DataTables UI */
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin-left: 8px;
+}
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 5px;
+    margin: 0 5px;
+}
+.dataTables_wrapper .dataTables_paginate {
+    margin-top: 12px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 2px;
+    color: var(--blanco) !important;
+    background: #ccc !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--negro) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-contenedor {
+        padding: 1rem;
+    }
+    table.dataTable th, table.dataTable td {
+        font-size: 0.85rem;
+        padding: 8px;
+    }
+    h1 {
+        font-size: 1.3rem;
+    }
+}
+/* Espaciado para el buscador de DataTables */
+.dataTables_filter {
+    margin-top: 10px;   /* separa un poco hacia abajo */
+    margin-bottom: 15px; /* separa de la tabla */
+    margin-right: 20px; /* separa del borde derecho */
+}
