@@ -16,6 +16,25 @@ from app.models import (
     Admin, Beneficio, LugarFrecuente,
     EventoQR, EventoQRRegistro
 )
+from app.models import LogEntry
+from app import db
+from flask import session
+from datetime import datetime
+import pytz
+
+def registrar_log(action, entity, details=""):
+    """Registra una acción en el Log de Actividades"""
+    tz = pytz.timezone('America/Merida')
+    entry = LogEntry(
+        timestamp=datetime.utcnow(),
+        user=session.get("nombre_usuario", "sistema"),
+        role=session.get("rol", "desconocido"),
+        action=action,
+        entity=entity,
+        details=details
+    )
+    db.session.add(entry)
+    db.session.commit()
 
 def login_requerido_admin(f):
     @wraps(f)
@@ -80,6 +99,7 @@ def login():
             session["nombre_usuario"] = admin.usuario  # <-- Guardamos el nombre del admin aquí
             print(f"[DEBUG] Login exitoso: {admin.usuario} con rol {admin.rol}")
             entry = LogEntry(
+                timestamp=datetime.utcnow(),   
                 user=admin.usuario,
                 role=admin.rol,
                 action="inicio sesión",
@@ -105,6 +125,7 @@ def logout():
     session.clear()
     # --- Log de cierre de sesión ---
     entry = LogEntry(
+        timestamp=datetime.utcnow(),   
         user=nombre,
         role=rol,
         action="cierre sesión",
@@ -248,6 +269,9 @@ def sumar_puntos():
     db.session.add(movimiento)
     db.session.commit()
     
+    # 📝 Registrar en LOG
+    registrar_log("suma", "Familia", f"Se sumaron {puntos} puntos a la familia '{familia.nombre}' (ID {familia.id}), motivo: {motivo}")
+    
     # Enviar correo
     enviar_correo_movimiento(familia.correo, familia.nombre, puntos, "suma", motivo)
 
@@ -272,6 +296,10 @@ def restar_puntos():
     movimiento = MovimientoPuntos(familia_id=familia.id, cambio=-puntos, motivo=motivo)
     db.session.add(movimiento)
     db.session.commit()
+    
+        
+    # 📝 Registrar en LOG
+    registrar_log("resta", "Familia", f"Se restaron {puntos} puntos a la familia '{familia.nombre}' (ID {familia.id}), motivo: {motivo}")
     
     # Enviar correo
     enviar_correo_movimiento(familia.correo, familia.nombre, puntos, "canje", motivo)
@@ -374,6 +402,17 @@ def registrar_transaccion():
         )
         db.session.add(nueva_transaccion)
         db.session.commit()
+
+        # 📝 Registrar en LOG
+        if tipo == "suma":
+            registrar_log("suma", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) recibió {puntos} puntos. Motivo: {descripcion}")
+        elif tipo == "canje":
+            registrar_log("canje", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) canjeó {puntos} puntos. Motivo: {descripcion}")
+        elif tipo == "penalizacion":
+            registrar_log("penalizar", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) penalizada con {puntos} puntos. Motivo: {descripcion}")
+
+        
+        
 
         # Enviar correo con asunto de penalización
         enviar_correo_movimiento(
@@ -521,6 +560,16 @@ def registrar_transaccion_web(familia_id):
 
     db.session.add(transaccion)
     db.session.commit()
+
+    # 📝 Registrar en LOG
+    if tipo == "suma":
+        registrar_log("suma", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) recibió {puntos} puntos. Motivo: {descripcion}")
+    elif tipo == "canje":
+        registrar_log("canje", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) canjeó {puntos} puntos. Motivo: {descripcion}")
+    elif tipo == "penalizacion":
+        registrar_log("penalizar", "Familia", f"Familia '{familia.nombre}' (ID {familia.id}) penalizada con {puntos} puntos. Motivo: {descripcion}")
+
+    
     
     enviar_correo_movimiento(familia.correo, familia.nombre, abs(puntos_finales), tipo, descripcion)
 
@@ -556,6 +605,11 @@ def exportar_transacciones(familia_id):
 
     wrapper.flush()
     buffer.seek(0)
+    
+    
+    # 📝 Registrar en LOG
+    registrar_log("exportar", "Transacciones", f"Exportación de transacciones de la familia '{familia.nombre}' (ID {familia.id})")
+
 
     return Response(
         buffer.read(),
@@ -588,6 +642,9 @@ def crear_admin():
 
         db.session.add(nuevo_admin)
         db.session.commit()
+        
+        # 📝 Registrar en LOG
+        registrar_log("crear", "Admin", f"Se creó administrador '{usuario}' con rol {rol}")
 
         flash("Usuario creado con éxito", "success")
         return redirect(url_for('crear_admin'))
@@ -936,6 +993,13 @@ def escanear_familia_staff(familia_id):
                 descripcion=f"Asistencia al evento: {evento.nombre_evento}"
             ))
             db.session.commit()
+            
+            # 📝 Registrar en LOG
+            registrar_log(
+                "escanear",
+                "EventoQR",
+                f"Staff ({session.get('nombre_usuario')}) registró asistencia de la familia '{familia.nombre}' (ID {familia.id}) al evento '{evento.nombre_evento}' (ID {evento.id})"
+            )
 
             # 📧 Enviar correo de confirmación
             try:
@@ -1058,6 +1122,13 @@ def api_escanear_qr_evento():
         descripcion=f"Asistencia al evento: {evento.nombre_evento}"
     ))
     db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log(
+        "escanear",
+        "EventoQR",
+        f"Escaneo API → Familia '{familia.nombre}' (ID {familia.id}) asistió al evento '{evento.nombre_evento}' (ID {evento.id})"
+    )
 
     # 📧 Enviar correo de confirmación
     try:
@@ -1137,6 +1208,15 @@ def registrar_asistencia_evento():
         fecha=datetime.now(pytz.timezone('America/Merida')).replace(tzinfo=None)
     ))
     db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log(
+        "escanear",
+        "EventoQR",
+        f"Admin ({session.get('nombre_usuario')}) registró asistencia de la familia '{familia.nombre}' (ID {familia.id}) al evento '{evento.nombre_evento}' (ID {evento.id})"
+    )
+    
+    
 
     # 💌 Enviar correo de confirmación
     try:
@@ -1201,6 +1281,9 @@ def crear_qr_evento():
 
         evento.qr_filename = qr_fname
         db.session.commit()
+        
+        # 📝 Registrar en LOG
+        registrar_log("crear", "EventoQR", f"Evento '{nombre_evento}' creado con {puntos} puntos")
 
         flash('🎯 Evento QR creado con éxito.', 'success')
         return redirect(url_for('crear_qr_evento'))
@@ -1351,6 +1434,11 @@ from flask import send_from_directory
 @app.route('/descargar_qr_evento/<filename>')
 def descargar_qr_evento(filename):
     carpeta_qr = os.path.join(app.root_path, 'static', 'qr_eventos')
+    
+    # 📝 Registrar en LOG
+    registrar_log("exportar", "EventoQR", f"Se descargó QR del evento (archivo {filename})")
+
+    
     return send_from_directory(carpeta_qr, filename, as_attachment=True)
 
 @app.route('/descargar_qr/<int:familia_id>')
@@ -1463,6 +1551,13 @@ def validar_qr_evento():
     ))
 
     db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log(
+        "escanear",
+        "EventoQR",
+        f"Familia '{familia.nombre}' (ID {familia.id}) escaneó el evento '{evento.nombre_evento}' (ID {evento.id})"
+    )
 
     # 💌 Enviar correo de confirmación
     enviar_correo_movimiento(
@@ -1583,6 +1678,9 @@ def eliminar_eventos():
             db.session.delete(evento)
 
     db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log("eliminar", "EventoQR", f"Se eliminaron {len(ids)} eventos masivamente")
     flash('Eventos eliminados correctamente', 'success')
     return redirect(url_for('crear_qr_evento'))
 
@@ -1614,6 +1712,9 @@ def editar_evento(evento_id):
         evento.valid_to   = datetime.strptime(valid_to,   '%Y-%m-%dT%H:%M') if valid_to   else None
 
         db.session.commit()
+        
+        # 📝 Registrar en LOG
+        registrar_log("editar", "EventoQR", f"Evento ID {evento.id} actualizado: {evento.nombre_evento}")
         flash('Evento actualizado correctamente.', 'success')
         return redirect(url_for('crear_qr_evento'))
 
@@ -1646,6 +1747,8 @@ def editar_beneficio(beneficio_id):
         beneficio.nombre = nombre
         beneficio.puntos_requeridos = puntos_requeridos
         db.session.commit()
+        # 📝 Registrar en LOG
+        registrar_log("editar", "Beneficio", f"Beneficio ID {beneficio.id} actualizado: {beneficio.nombre}")
         flash("Beneficio actualizado exitosamente", "success")
         return redirect(url_for('crear_beneficio'))
 
@@ -1710,6 +1813,10 @@ def exportar_historial_escaneos_evento(evento_id):
     # No cerramos wrapper, solo hacemos flush
     wrapper.flush()
     buffer.seek(0)  # Volvemos al inicio para leer todo el contenido
+    
+    # 📝 Registrar en LOG
+    registrar_log("exportar", "EventoQR", f"Se exportó historial del evento '{evento.nombre_evento}' (ID {evento.id})")
+
 
     return Response(
         buffer.read(),
@@ -1769,9 +1876,14 @@ def descargar_pdf_qr_familia(familia_id):
     response.headers.set('Content-Type', 'application/pdf')
     response.headers.set('Content-Disposition', 'attachment', filename=f'qr_familia_{familia.id}.pdf')
 
+    # 📝 Registrar en LOG
+    registrar_log("exportar", "Familia", f"Se descargó PDF con QR de la familia '{familia.nombre}' (ID {familia.id})")
+
+
     return response
 
 from app.models import EventoQR  # Asegúrate de importar tu modelo
+from flask import abort
 
 @app.route('/evento/<int:evento_id>/descargar_pdf_qr')
 def descargar_pdf_qr_evento(evento_id):
@@ -1802,6 +1914,11 @@ def descargar_pdf_qr_evento(evento_id):
     c.save()
 
     buffer.seek(0)
+    
+    # 📝 Registrar en LOG
+    registrar_log("exportar", "EventoQR", f"Se descargó PDF con QR del evento '{evento.nombre_evento}' (ID {evento.id})")
+
+    
     return send_file(buffer, as_attachment=True, download_name=f"{evento.nombre_evento}_QR.pdf", mimetype='application/pdf')
 
 @app.route('/puntos-masivos', methods=['GET', 'POST'])
@@ -1884,22 +2001,18 @@ from app.models import Familia, Transaccion, MovimientoPuntos  # ajusta nombres
 @app.route('/familia/<int:familia_id>/eliminar', methods=['POST'])
 def eliminar_familia(familia_id):
     familia = Familia.query.get_or_404(familia_id)
+    nombre_familia = familia.nombre  
     Transaccion.query.filter_by(familia_id=familia_id).delete()
     MovimientoPuntos.query.filter_by(familia_id=familia_id).delete()
     db.session.delete(familia)
     db.session.commit()
 
-    # 🗑 Familia eliminada
-    entry = LogEntry(
-        timestamp=datetime.utcnow(),
-        user=session.get("nombre_usuario"),
-        role=session.get("rol"),
-        action="eliminar",
-        entity="Familia",
-        details=f"id={familia_id}"
+    registrar_log(
+        
+        "eliminar",
+        "Familia",
+        f"Se eliminó la familia '{nombre_familia}' (ID {familia_id})"
     )
-    db.session.add(entry)
-    db.session.commit()
 
     flash('Familia eliminada correctamente', 'success')
     return redirect(url_for('lista_familias_eliminar'))
@@ -1918,6 +2031,14 @@ def eliminar_familias_masivo():
         MovimientoPuntos.query.filter(MovimientoPuntos.familia_id.in_(ids)).delete(synchronize_session=False)
         Familia.query.filter(Familia.id.in_(ids)).delete(synchronize_session=False)
         db.session.commit()
+        
+        # 📝 Registrar en LOG
+        registrar_log(
+            "eliminar",
+            "Familia",
+            f"Se eliminaron {len(ids)} familias en operación masiva"
+        )
+
         flash(f'Se eliminaron {len(ids)} familias', 'success')
     else:
         flash('No se seleccionó ninguna familia', 'error')
@@ -2129,13 +2250,14 @@ def importar_excel_familias():
                 filas_insertadas += 1
 
         db.session.commit()
+        registrar_log("importar", "Familia", f"Se importaron {filas_insertadas} familias desde Excel")
+
         flash(f"✅ Se importaron {filas_insertadas} familias correctamente.", "success")
 
     except Exception as e:
         current_app.logger.error(f"[ERROR] Al importar Excel: {e}")
         flash("❌ Hubo un error al procesar el archivo.", "error")
 
-    # Redirige siempre al panel de admin ("/admin")
     return redirect(url_for("panel_admin"))
 
 
@@ -2197,6 +2319,14 @@ def editar_contrasena_admin(admin_id):
         else:
             admin.set_password(nueva)
             db.session.commit()
+            
+            # 📝 Registrar en LOG
+            registrar_log(
+                "editar",
+                "Admin",
+                f"Se actualizó la contraseña del administrador '{admin.usuario}' (ID {admin.id})"
+            )
+            
             flash("Contraseña actualizada con éxito.", "success")
             return redirect(url_for("lista_administradores"))
 

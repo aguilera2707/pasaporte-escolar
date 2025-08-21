@@ -190,3 +190,10 @@ td.acciones {
     text-align: center; /* Texto centrado */
 }
 
+/* Centrar la columna de Puntos necesarios */
+table th:nth-child(2),
+table td:nth-child(2) {
+    text-align: center;
+    font-weight: bold;   /* opcional: para resaltarlos */
+    color: var(--rojo-profundo); /* opcional: darle tono institucional */
+}
