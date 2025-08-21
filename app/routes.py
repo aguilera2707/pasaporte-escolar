@@ -2191,7 +2191,7 @@ def resetear_base_datos():
     db.session.query(EventoQR).delete()
     db.session.query(MovimientoPuntos).delete()
     db.session.query(Transaccion).delete()
-    db.session.query(Beneficio).delete()
+    #db.session.query(Beneficio).delete()
     db.session.query(Familia).delete()
     db.session.commit()
 
