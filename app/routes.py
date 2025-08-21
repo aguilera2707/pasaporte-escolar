@@ -2194,7 +2194,7 @@ def resetear_base_datos():
     db.session.query(Familia).delete()
     db.session.commit()
 
-    # 🔄 Reiniciar secuencias solo en Postgres
+# 🔄 Reiniciar secuencias solo en Postgres
     if db.engine.url.drivername.startswith("postgresql"):
         secuencias = [
             "familia_id_seq",
