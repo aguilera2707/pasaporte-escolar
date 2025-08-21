@@ -2186,14 +2186,29 @@ def resetear_base_datos():
     with open(os.path.join("respaldo", zip_filename), "wb") as f:
         f.write(zip_stream.getvalue())
 
-    # Borrar registros (excepto Admins)
+    # Borrar registros (excepto Admins, Beneficios, Logs)
     db.session.query(EventoQRRegistro).delete()
     db.session.query(EventoQR).delete()
     db.session.query(MovimientoPuntos).delete()
     db.session.query(Transaccion).delete()
-    #db.session.query(Beneficio).delete()
     db.session.query(Familia).delete()
     db.session.commit()
+
+    # 🔄 Reiniciar secuencias solo en Postgres
+    if db.engine.url.drivername.startswith("postgresql"):
+        secuencias = [
+            "familia_id_seq",
+            "movimiento_puntos_id_seq",
+            "transaccion_id_seq",
+            "evento_qr_id_seq",
+            "evento_qr_registro_id_seq"
+        ]
+        for seq in secuencias:
+            try:
+                db.session.execute(f'ALTER SEQUENCE {seq} RESTART WITH 1;')
+            except Exception as e:
+                print(f"[WARN] No se pudo resetear {seq}: {e}")
+        db.session.commit()
 
     # Guardar en el log
     nuevo_log = LogEntry(
@@ -2213,6 +2228,7 @@ def resetear_base_datos():
         download_name=zip_filename,
         mimetype="application/zip"
     )
+
 
 from flask import (
     request, redirect, url_for, flash, current_app
