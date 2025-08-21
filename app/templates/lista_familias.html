@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Lista de Familias</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lista_familias.css') }}">
-
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <style>
@@ -60,12 +59,12 @@ body {
                         <td>{{ f.nombre }}</td>
                         <td>{{ f.correo }}</td>
                         <td>{{ f.password }}</td>
-                        <td>{{ f.puntos }}</td>
+                        <td id="puntos-{{ f.id }}">{{ f.puntos }}</td>
                         <td class="acciones">
                             <a href="{{ url_for('ver_familia', familia_id=f.id) }}">Ver</a>
                             <a href="{{ url_for('editar_familia', familia_id=f.id) }}">✏️ Editar</a>
-                            <button onclick="sumar({{ f.id }})" class="sumar" title="Sumar puntos">➕</button>
-                            <button onclick="canjear({{ f.id }})" class="canjear" title="Canjear puntos">➖</button>
+                            <button type="button" onclick="sumar({{ f.id }})" class="sumar" title="Sumar puntos">➕</button>
+                            <button type="button" onclick="canjear({{ f.id }})" class="canjear" title="Canjear puntos">➖</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -84,17 +83,24 @@ body {
                     search: "🔍 Buscar:",
                     lengthMenu: "Mostrar _MENU_ registros",
                     info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
-                    paginate: {
-                        previous: "←",
-                        next: "→"
-                    },
+                    paginate: { previous: "←", next: "→" },
                     zeroRecords: "No se encontraron coincidencias",
                 },
                 pageLength: 50,
                 lengthMenu: [5, 10, 20, 50, 100],
             });
+
+            // Ocultar mensajes flash
+            setTimeout(() => {
+                const div = document.getElementById('mensajes-flash');
+                if (div) div.style.display = 'none';
+            }, 4000);
         });
 
+        // Helper mínimo para mensajes
+        function mostrarMensaje(texto, tipo) {
+            alert(texto); // simple y directo
+        }
 
         function sumar(id) {
             const puntos = prompt("¿Cuántos puntos deseas sumar?");
@@ -108,16 +114,22 @@ body {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     familia_id: id,
-                    puntos: parseInt(puntos),
+                    puntos: parseInt(puntos, 10),
                     tipo: "suma",
                     descripcion: motivo
                 })
-            }).then(r => r.json()).then(data => {
+            })
+            .then(r => r.json())
+            .then(data => {
                 if (data.error) {
                     mostrarMensaje(data.error, 'error');
                 } else {
-                    mostrarMensaje(data.mensaje, 'exito');
-                    location.reload();
+                    // Actualiza solo la celda de puntos según tu API (/transaccion)
+                    const celda = document.getElementById(`puntos-${id}`);
+                    if (celda && typeof data.puntos_restantes !== "undefined") {
+                        celda.textContent = data.puntos_restantes;
+                    }
+                    mostrarMensaje(data.mensaje || "Puntos sumados", 'exito');
                 }
             });
         }
@@ -134,24 +146,25 @@ body {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     familia_id: id,
-                    puntos: parseInt(puntos),
+                    puntos: parseInt(puntos, 10),
                     tipo: "canje",
                     descripcion: motivo
                 })
-            }).then(r => r.json()).then(data => {
+            })
+            .then(r => r.json())
+            .then(data => {
                 if (data.error) {
                     mostrarMensaje(data.error, 'error');
                 } else {
-                    mostrarMensaje(data.mensaje, 'exito');
-                    location.reload();
+                    // Actualiza solo la celda de puntos
+                    const celda = document.getElementById(`puntos-${id}`);
+                    if (celda && typeof data.puntos_restantes !== "undefined") {
+                        celda.textContent = data.puntos_restantes;
+                    }
+                    mostrarMensaje(data.mensaje || "Puntos canjeados", 'exito');
                 }
             });
         }
-
-        // Ocultar mensajes flash
-        setTimeout(() => {
-            const div = document.getElementById('mensajes-flash');
-            if (div) div.style.display = 'none';
-        }, 4000);
     </script>
 </body>
+</html>

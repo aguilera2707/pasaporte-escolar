@@ -213,3 +213,45 @@ td.acciones {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+/* Ajustar celda de acciones */
+td.acciones {
+    white-space: nowrap; /* evita saltos de línea */
+    text-align: center;
+}
+
+/* Botones alineados en fila */
+td.acciones a,
+td.acciones button {
+    display: inline-block;
+    margin: 0 2px;
+    vertical-align: middle;
+}
+/* ==== FIX columna Acciones con DataTables ==== */
+
+/* La celda vuelve a ser table-cell, sin wraps ni flex, y sin alto extra */
+#tabla-familias td.acciones {
+    display: table-cell !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+/* Los botones van en línea, sin romper a segunda fila */
+#tabla-familias td.acciones > a,
+#tabla-familias td.acciones > button {
+    display: inline-block !important;
+    margin: 0 4px !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;   /* evita “alto fantasma” */
+}
+
+/* Evita que DataTables aplique alturas raras a las celdas */
+#tabla-familias tbody td {
+    vertical-align: middle !important;
+}
+
+/* Si en algún lado quedó .acciones como contenedor flex, lo desactivamos solo en celdas */
+#tabla-familias td.acciones.acciones {
+    display: table-cell !important;
+}
