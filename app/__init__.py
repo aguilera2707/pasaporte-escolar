@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytz
 from datetime import datetime
 import os
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 app = Flask(__name__)
 
@@ -20,8 +21,34 @@ uri = os.getenv("DATABASE_URL", "sqlite:///cuponera.db")
 if uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
+# Asegurar sslmode=require para Postgres en Render si no viene en la URL
+if uri.startswith("postgresql://") or uri.startswith("postgresql+psycopg2://"):
+    parsed = urlparse(uri)
+    q = dict(parse_qsl(parsed.query))
+    if "sslmode" not in q:
+        q["sslmode"] = "require"
+        uri = urlunparse(parsed._replace(query=urlencode(q)))
+
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# --- ✅ POOL DE CONEXIONES (solo para Postgres) ---
+if uri.startswith("postgresql://") or uri.startswith("postgresql+psycopg2://"):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_size": 5,          # conexiones persistentes
+        "max_overflow": 10,      # conexiones extra en picos
+        "pool_timeout": 30,      # segundos de espera por una conexión libre
+        "pool_recycle": 1800,    # reciclar cada 30min (evita expiraciones)
+        "pool_pre_ping": True,   # verifica conexión viva antes de usarla
+        # Opcional: keepalives para conexiones largas (psycopg2)
+        "connect_args": {
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 3,
+        },
+    }
+# --- fin pool ---
 
 # =========================
 # Configuración general
