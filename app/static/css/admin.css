@@ -567,3 +567,35 @@ td.acciones .canjear:hover {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* Modal administrativo */
+.admin-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.admin-modal-box {
+    background: #fffdfa;
+    text-align: center;
+    border-radius: 14px;
+    padding: 2em;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 2px 12px #00000022;
+    text-align: center;
+    border: 2px solid #e9b80088;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.admin-modal-box h3 {
+    color: #850f0f;
+    margin-bottom: 0.9em;
+}
+.admin-modal-box button {
+    margin: 0 .6em;
+}
