@@ -2137,14 +2137,13 @@ def refrescar_timeout():
             session.clear()
             return redirect(url_for("login"))
 
-        # si no ha expirado, refrescamos la marca de actividad
-        session["last_activity"] = now
 from flask import send_file
 import zipfile
 import io
 import os
 import csv
 from werkzeug.security import check_password_hash  # por si no estaba importado
+from sqlalchemy import text  # ⬅️ necesario para ejecutar SQL crudo
 
 @app.route("/resetear_base_datos", methods=["POST"])
 @login_requerido_admin
@@ -2186,31 +2185,30 @@ def resetear_base_datos():
     with open(os.path.join("respaldo", zip_filename), "wb") as f:
         f.write(zip_stream.getvalue())
 
-    # Borrar registros (excepto Admins, Beneficios, Logs)
-    db.session.query(EventoQRRegistro).delete()
-    db.session.query(EventoQR).delete()
-    db.session.query(MovimientoPuntos).delete()
-    db.session.query(Transaccion).delete()
-    db.session.query(Familia).delete()
-    db.session.commit()
-
-# 🔄 Reiniciar secuencias solo en Postgres
+    # === BORRADO + REINICIO IDS ===
     if db.engine.url.drivername.startswith("postgresql"):
-        secuencias = [
-            "familia_id_seq",
-            "movimiento_puntos_id_seq",
-            "transaccion_id_seq",
-            "evento_qr_id_seq",
-            "evento_qr_registro_id_seq"
-        ]
-        for seq in secuencias:
-            try:
-                db.session.execute(f'ALTER SEQUENCE {seq} RESTART WITH 1;')
-            except Exception as e:
-                print(f"[WARN] No se pudo resetear {seq}: {e}")
+        # ✅ Postgres: TRUNCATE + RESTART IDENTITY resetea los IDs a 1 automáticamente
+        db.session.execute(text("""
+            TRUNCATE TABLE
+                evento_qr_registro,
+                evento_qr,
+                movimiento_puntos,
+                transaccion,
+                familia
+            RESTART IDENTITY CASCADE;
+        """))
         db.session.commit()
+    else:
+        # Otros motores (SQLite): borrado clásico
+        db.session.query(EventoQRRegistro).delete()
+        db.session.query(EventoQR).delete()
+        db.session.query(MovimientoPuntos).delete()
+        db.session.query(Transaccion).delete()
+        db.session.query(Familia).delete()
+        db.session.commit()
+        # En SQLite no hace falta reiniciar secuencias; arranca en 1 tras DELETE
 
-    # Guardar en el log
+    # Log del reseteo (no afecta IDs de tablas que reseteamos)
     nuevo_log = LogEntry(
         timestamp=datetime.utcnow(),
         user=admin.usuario,
