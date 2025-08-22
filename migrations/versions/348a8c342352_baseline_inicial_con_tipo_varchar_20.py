@@ -1,8 +1,8 @@
-"""Migración inicial
+"""baseline inicial con tipo VARCHAR(20)
 
-Revision ID: d49870e0e912
+Revision ID: 348a8c342352
 Revises: 
-Create Date: 2025-08-19 13:54:30.016516
+Create Date: 2025-08-22 07:27:32.059696
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd49870e0e912'
+revision = '348a8c342352'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,7 +21,7 @@ def upgrade():
     op.create_table('admin',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('usuario', sa.String(length=80), nullable=False),
-    sa.Column('password_hash', sa.String(length=128), nullable=False),
+    sa.Column('password_hash', sa.String(length=512), nullable=False),
     sa.Column('rol', sa.String(length=20), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('usuario')
@@ -93,7 +93,7 @@ def upgrade():
     op.create_table('transaccion',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('familia_id', sa.Integer(), nullable=False),
-    sa.Column('tipo', sa.String(length=10), nullable=False),
+    sa.Column('tipo', sa.String(length=20), nullable=False),
     sa.Column('puntos', sa.Integer(), nullable=False),
     sa.Column('descripcion', sa.String(length=200), nullable=True),
     sa.Column('fecha', sa.DateTime(), nullable=False),

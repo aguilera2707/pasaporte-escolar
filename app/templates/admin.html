@@ -23,13 +23,14 @@ body {
 </style>
 
 <body>
+<button id="menu-toggle" aria-controls="admin-navbar" aria-expanded="false" aria-label="Abrir menú">☰</button>    
 <div class="admin-bg"></div>
 <div class="admin-contenedor">
+    
     <div class="admin-userbar">
         <span>👤 Usuario: {{ session.get('nombre_usuario') }}</span>
         <a href="{{ url_for('logout') }}">Cerrar sesión</a>
     </div>
-
     <nav class="admin-navbar" id="admin-navbar">
         <ul>
         {% if rol == 'admin' %}
@@ -379,6 +380,27 @@ setTimeout(function() {
         setTimeout(() => msg.remove(), 1000);
     });
 }, 4000);
+
+    (function () {
+        const btn = document.getElementById('menu-toggle');
+        const nav = document.getElementById('admin-navbar');
+        if (!btn || !nav) return;
+
+        btn.addEventListener('click', () => {
+        nav.classList.toggle('open');
+        const abierto = nav.classList.contains('open');
+        btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        });
+
+        // Cierra el menú tras elegir una opción (mejor UX en móvil)
+        document.querySelectorAll('#admin-navbar a').forEach(a => {
+        a.addEventListener('click', () => {
+            nav.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        });
+    })();
+
 </script>
 </body>
 </html>

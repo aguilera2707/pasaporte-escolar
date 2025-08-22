@@ -38,7 +38,7 @@ class MovimientoPuntos(db.Model):
 class Transaccion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
-    tipo = db.Column(db.String(10), nullable=False)  # "suma" o "canje"
+    tipo = db.Column(db.String(20), nullable=False)  # "suma" o "canje"
     puntos = db.Column(db.Integer, nullable=False)
     descripcion = db.Column(db.String(200))
     fecha = db.Column(db.DateTime, default=hora_local_merida, nullable=False)

@@ -94,6 +94,7 @@ body {
 
 /* Navbar y menú hamburguesa */
 #menu-toggle {
+    z-index: 10001;
     display: none;
     font-size: 1.8em;
     background: var(--dorado);
@@ -104,7 +105,6 @@ body {
     position: fixed;
     top: 1rem;
     left: 1rem;
-    z-index: 999;
     cursor: pointer;
     box-shadow: 0 2px 6px #0002;
 }
@@ -161,7 +161,7 @@ body {
         z-index: 998;
         overflow-y: auto;
     }
-    .admin-navbar.open { display: flex; }
+    .admin-navbar.open { display: flex !important; }
     .admin-navbar ul { flex-direction: column; align-items: flex-start; }
     .admin-navbar ul li a {
         justify-content: flex-start;
@@ -598,4 +598,114 @@ td.acciones .canjear:hover {
 }
 .admin-modal-box button {
     margin: 0 .6em;
+}
+@media (max-width: 768px) {
+#menu-toggle {
+    display: block;
+    position: fixed;
+    top: .6rem;
+    left: .6rem;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 1.35rem;   /* ícono más discreto */
+    line-height: 44px;
+    text-align: center;
+    border-radius: 10px;
+    z-index: 10001;       /* por encima de todo */
+    background: #111;     /* más contraste */
+    color: #fff;
+    box-shadow: 0 2px 6px #0003;
+    }
+}
+
+/* --- Móvil: navbar lateral sobrepuesta --- */
+@media (max-width: 768px) {
+.admin-navbar {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh; width: 80vw;
+    background: rgba(17,17,17,0.96);
+    padding: 1.2rem 1rem;
+    z-index: 10000;
+    overflow-y: auto;
+    }
+    .admin-navbar.open { display: flex !important; }
+
+    .admin-navbar ul { flex-direction: column; gap: .6rem; }
+    .admin-navbar ul li a { font-size: 1rem; padding: .5rem 0; }
+}
+/* --- Móvil: contenedor y barra de usuario compactos --- */
+@media (max-width: 768px) {
+    .admin-contenedor {
+        margin: 4rem .5rem 1rem;   /* deja espacio al toggle fijo */
+        padding: 1rem .7rem;
+        border-radius: 14px;
+    }
+    .admin-userbar {
+        justify-content: space-between;
+        gap: .6rem;
+        font-size: .95rem;
+        padding: .5rem .8rem;
+        margin-bottom: 1rem;
+    }
+    .admin-userbar a {
+        font-size: .95rem;
+        padding: .35rem .7rem;
+    }
+}
+/* --- Móvil: tablas y acciones legibles sin desbordar --- */
+@media (max-width: 768px) {
+    th, td { font-size: .9rem; padding: 10px 8px; }
+    .table-responsive { overflow-x: auto; }
+
+    /* Botones globales */
+    button, .btn, .btn-primary {
+        padding: 8px 12px;
+        font-size: .95rem;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px #00000020;
+    }
+
+    /* Acciones de fila */
+    td.acciones { gap: 6px; }
+    td.acciones a, td.acciones button {
+        padding: 6px 10px;
+        font-size: .85rem;
+        min-width: 48px;
+        height: 34px;
+    }
+    td.acciones .sumar, td.acciones .canjear {
+        font-size: .9rem;
+        padding: .35rem .7rem;
+    }
+}
+/* --- Móvil: formularios compactos --- */
+@media (max-width: 768px) {
+    .evento-form select {
+        width: 100%;
+        font-size: .95rem;
+        padding: 8px 12px;
+    }
+    .evento-form .btn-primary {
+        padding: 8px 12px;
+        font-size: .95rem;
+        margin-top: .5rem;
+    }
+
+    #formImportarExcel input[type="file"] {
+        max-width: 100%;
+        font-size: .9rem;
+        padding: 6px;
+    }
+    #formImportarExcel input[type="file"]::file-selector-button {
+        padding: .35rem .6rem;
+        font-size: .85rem;
+    }
+    #formImportarExcel button[type="submit"] {
+        padding: 8px 12px;
+        font-size: .95rem;
+    }
 }
