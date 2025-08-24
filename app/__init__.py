@@ -56,6 +56,8 @@ if uri.startswith("postgresql://") or uri.startswith("postgresql+psycopg2://"):
 app.config['SECRET_KEY'] = 'clave-super-secreta-123'
 app.permanent_session_lifetime = timedelta(minutes=30)
 
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB
+
 # =========================
 # Configuración de correo
 # =========================

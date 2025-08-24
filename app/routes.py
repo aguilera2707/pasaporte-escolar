@@ -2228,52 +2228,6 @@ def resetear_base_datos():
     )
 
 
-from flask import (
-    request, redirect, url_for, flash, current_app
-)
-from openpyxl import load_workbook
-from app import app, db
-from app.models import Familia
-from functools import wraps
-
-@app.route("/importar_excel_familias", methods=["POST"])
-@login_requerido_admin
-def importar_excel_familias():
-    archivo = request.files.get("excelFile")
-    if not archivo or not archivo.filename.lower().endswith(".xlsx"):
-        flash("❌ Formato no válido. Asegúrate de subir un archivo .xlsx", "error")
-        return redirect(url_for("panel_admin"))
-
-    try:
-        wb = load_workbook(archivo)
-        hoja = wb.active
-
-        filas_insertadas = 0
-        for nombre, correo, password, puntos in hoja.iter_rows(min_row=2, values_only=True):
-            if not nombre or not correo or not password:
-                continue
-
-            if not Familia.query.filter_by(correo=correo).first():
-                nueva = Familia(
-                    nombre=nombre,
-                    correo=correo,
-                    password=password,
-                    puntos=int(puntos) if puntos else 0
-                )
-                db.session.add(nueva)
-                filas_insertadas += 1
-
-        db.session.commit()
-        registrar_log("importar", "Familia", f"Se importaron {filas_insertadas} familias desde Excel")
-
-        flash(f"✅ Se importaron {filas_insertadas} familias correctamente.", "success")
-
-    except Exception as e:
-        current_app.logger.error(f"[ERROR] Al importar Excel: {e}")
-        flash("❌ Hubo un error al procesar el archivo.", "error")
-
-    return redirect(url_for("panel_admin"))
-
 
 
 
@@ -2474,3 +2428,154 @@ def descargar_qr_pdf(familia_id):
     c.save()
 
     return send_file(pdf_path, as_attachment=True, download_name=f"QR_{nombre_familia.replace(' ', '_')}.pdf")
+
+from flask import request, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+from app import app, db
+from app.models import Familia
+
+import io, csv, tempfile, gc, os
+from openpyxl import load_workbook
+
+ALLOWED_EXTS = {'.xlsx', '.csv'}
+BATCH_SIZE = 500  # tamaño de lote para inserts
+
+def _ext(filename: str) -> str:
+    idx = filename.rfind('.')
+    return filename[idx:].lower() if idx != -1 else ''
+
+@app.route("/importar_excel_familias", methods=["POST"])
+@login_requerido_admin
+def importar_excel_familias():
+    f = request.files.get("excelFile")
+    if not f or not f.filename:
+        flash("❌ No se seleccionó archivo.", "error")
+        return redirect(url_for("panel_admin"))
+
+    ext = _ext(f.filename)
+    if ext not in ALLOWED_EXTS:
+        flash("❌ Formato no válido. Sube .xlsx o .csv", "error")
+        return redirect(url_for("panel_admin"))
+
+    try:
+        insertados = 0
+        duplicados = 0
+
+        if ext == ".csv":
+            # CSV: lectura ligera
+            content = f.read()
+            stream = io.TextIOWrapper(io.BytesIO(content), encoding="utf-8-sig", newline="")
+            reader = csv.DictReader(stream)
+            lote = []
+
+            for row in reader:
+                nombre   = (row.get("nombre") or row.get("Nombre") or "").strip()
+                correo   = (row.get("correo") or row.get("Correo") or row.get("email") or "").strip().lower()
+                password = (row.get("password") or row.get("Password") or "").strip()
+                puntos   = row.get("puntos") or row.get("Puntos")
+
+                if not nombre or not correo or not password:
+                    continue
+
+                if Familia.query.filter_by(correo=correo).first():
+                    duplicados += 1
+                    continue
+
+                try:
+                    puntos_val = int(puntos) if puntos not in (None, "",) else 0
+                except ValueError:
+                    puntos_val = 0
+
+                lote.append(Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val))
+
+                if len(lote) >= BATCH_SIZE:
+                    db.session.bulk_save_objects(lote)
+                    db.session.commit()
+                    insertados += len(lote)
+                    lote.clear()
+                    gc.collect()
+
+            if lote:
+                db.session.bulk_save_objects(lote)
+                db.session.commit()
+                insertados += len(lote)
+                lote.clear()
+                gc.collect()
+
+        else:
+            # XLSX: guardar primero a archivo temporal (fix Permission denied)
+            tmp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+                    f.save(tmp.name)
+                    tmp_path = tmp.name
+
+                wb = load_workbook(tmp_path, read_only=True, data_only=True)
+                ws = wb.active
+
+                lote = []
+                first = True
+                headers = None
+
+                for row in ws.iter_rows(values_only=True):
+                    # Asumimos primera fila como encabezados
+                    if first:
+                        headers = [(str(c).strip().lower() if c is not None else "") for c in row]
+                        first = False
+                        continue
+
+                    cells = dict(zip(headers, row))
+
+                    nombre   = (cells.get("nombre") or "").strip() if cells.get("nombre") else ""
+                    correo   = (cells.get("correo") or cells.get("email") or "").strip().lower() if (cells.get("correo") or cells.get("email")) else ""
+                    password = (cells.get("password") or "").strip() if cells.get("password") else ""
+                    puntos   = cells.get("puntos")
+
+                    if not nombre or not correo or not password:
+                        continue
+
+                    if Familia.query.filter_by(correo=correo).first():
+                        duplicados += 1
+                        continue
+
+                    try:
+                        puntos_val = int(puntos) if puntos not in (None, "",) else 0
+                    except (ValueError, TypeError):
+                        puntos_val = 0
+
+                    lote.append(Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val))
+
+                    if len(lote) >= BATCH_SIZE:
+                        db.session.bulk_save_objects(lote)
+                        db.session.commit()
+                        insertados += len(lote)
+                        lote.clear()
+                        gc.collect()
+
+                if lote:
+                    db.session.bulk_save_objects(lote)
+                    db.session.commit()
+                    insertados += len(lote)
+                    lote.clear()
+                    gc.collect()
+
+                wb.close()
+            finally:
+                # Limpia el archivo temporal si existe
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except OSError:
+                        pass
+
+        flash(f"✅ Importación completa. Insertados: {insertados}. Duplicados: {duplicados}.", "success")
+        return redirect(url_for("panel_admin"))
+
+    except MemoryError:
+        db.session.rollback()
+        flash("❌ Sin memoria suficiente para procesar el archivo. Intenta dividirlo o usar CSV.", "error")
+        return redirect(url_for("panel_admin"))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Error al importar: {str(e)}", "error")
+        return redirect(url_for("panel_admin"))
