@@ -2436,13 +2436,25 @@ from app.models import Familia
 
 import io, csv, tempfile, gc, os
 from openpyxl import load_workbook
+import qrcode
 
 ALLOWED_EXTS = {'.xlsx', '.csv'}
-BATCH_SIZE = 500  # tamaño de lote para inserts
+BATCH_SIZE = 300  # un poco menor para memoria
 
 def _ext(filename: str) -> str:
     idx = filename.rfind('.')
     return filename[idx:].lower() if idx != -1 else ''
+
+def _qr_folder():
+    folder = os.path.join(app.root_path, 'static', 'qr')
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+def _make_family_qr(familia):
+    """Genera QR con versionado como en tu flujo actual."""
+    qr_url = url_for('ver_familia', familia_id=familia.id, _external=True) + f'?version_qr={familia.qr_version}'
+    img = qrcode.make(qr_url)
+    img.save(os.path.join(_qr_folder(), f'familia_{familia.id}.png'))
 
 @app.route("/importar_excel_familias", methods=["POST"])
 @login_requerido_admin
@@ -2461,8 +2473,10 @@ def importar_excel_familias():
         insertados = 0
         duplicados = 0
 
+        # Guardaremos correos insertados para regenerar QR tras commit
+        _correos_insertados = []
+
         if ext == ".csv":
-            # CSV: lectura ligera
             content = f.read()
             stream = io.TextIOWrapper(io.BytesIO(content), encoding="utf-8-sig", newline="")
             reader = csv.DictReader(stream)
@@ -2486,24 +2500,37 @@ def importar_excel_familias():
                 except ValueError:
                     puntos_val = 0
 
-                lote.append(Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val))
+                fam = Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val)
+                fam.qr_version = 1  # ✅ versión inicial del QR
+                lote.append(fam)
+                _correos_insertados.append(correo)
 
                 if len(lote) >= BATCH_SIZE:
-                    db.session.bulk_save_objects(lote)
+                    # Usamos add_all para tener IDs asignados tras commit
+                    db.session.add_all(lote)
                     db.session.commit()
                     insertados += len(lote)
+
+                    # Generar QR de este lote
+                    for fam in Familia.query.filter(Familia.correo.in_(_correos_insertados[-len(lote):])).all():
+                        _make_family_qr(fam)
+
                     lote.clear()
                     gc.collect()
 
             if lote:
-                db.session.bulk_save_objects(lote)
+                db.session.add_all(lote)
                 db.session.commit()
                 insertados += len(lote)
+
+                for fam in Familia.query.filter(Familia.correo.in_(_correos_insertados[-len(lote):])).all():
+                    _make_family_qr(fam)
+
                 lote.clear()
                 gc.collect()
 
         else:
-            # XLSX: guardar primero a archivo temporal (fix Permission denied)
+            # XLSX: guardar primero a archivo temporal (fix Permission denied en Windows/Render)
             tmp_path = None
             try:
                 with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
@@ -2518,7 +2545,6 @@ def importar_excel_familias():
                 headers = None
 
                 for row in ws.iter_rows(values_only=True):
-                    # Asumimos primera fila como encabezados
                     if first:
                         headers = [(str(c).strip().lower() if c is not None else "") for c in row]
                         first = False
@@ -2543,32 +2569,42 @@ def importar_excel_familias():
                     except (ValueError, TypeError):
                         puntos_val = 0
 
-                    lote.append(Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val))
+                    fam = Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val)
+                    fam.qr_version = 1  # ✅ versión inicial del QR
+                    lote.append(fam)
+                    _correos_insertados.append(correo)
 
                     if len(lote) >= BATCH_SIZE:
-                        db.session.bulk_save_objects(lote)
+                        db.session.add_all(lote)
                         db.session.commit()
                         insertados += len(lote)
+
+                        for fam in Familia.query.filter(Familia.correo.in_(_correos_insertados[-len(lote):])).all():
+                            _make_family_qr(fam)
+
                         lote.clear()
                         gc.collect()
 
                 if lote:
-                    db.session.bulk_save_objects(lote)
+                    db.session.add_all(lote)
                     db.session.commit()
                     insertados += len(lote)
+
+                    for fam in Familia.query.filter(Familia.correo.in_(_correos_insertados[-len(lote):])).all():
+                        _make_family_qr(fam)
+
                     lote.clear()
                     gc.collect()
 
                 wb.close()
             finally:
-                # Limpia el archivo temporal si existe
                 if tmp_path and os.path.exists(tmp_path):
                     try:
                         os.remove(tmp_path)
                     except OSError:
                         pass
 
-        flash(f"✅ Importación completa. Insertados: {insertados}. Duplicados: {duplicados}.", "success")
+        flash(f"✅ Importación completa. Insertados: {insertados}. Duplicados: {duplicados}. QR generados.", "success")
         return redirect(url_for("panel_admin"))
 
     except MemoryError:
