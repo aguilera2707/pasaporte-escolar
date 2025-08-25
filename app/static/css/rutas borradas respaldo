@@ -1,0 +1,103 @@
+@app.route('/validar_qr_evento', methods=["POST"])
+def validar_qr_evento():
+    data       = request.get_json()
+    evento_id  = data.get("evento_id")
+    lat        = data.get("lat")
+    lon        = data.get("lon")
+    familia_id = session.get("familia_id")
+
+    # 0. Comprobación básica
+    if not evento_id or not familia_id:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    evento  = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+    if not evento or not familia:
+        return jsonify({"error": "Evento o familia no encontrada"}), 404
+
+    # 1. Fecha/hora actual en zona local
+    tz          = pytz.timezone("America/Mexico_City")
+    ahora_local = datetime.now(tz)
+
+    # valid_from
+    if evento.valid_from:
+        vf_utc   = evento.valid_from.replace(tzinfo=pytz.UTC)
+        vf_local = vf_utc.astimezone(tz)
+        if ahora_local < vf_local:
+            inicio = vf_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento aún no está activo. Desde {inicio}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # valid_to
+    if evento.valid_to:
+        vt_utc   = evento.valid_to.replace(tzinfo=pytz.UTC)
+        vt_local = vt_utc.astimezone(tz)
+        if ahora_local > vt_local:
+            fin = vt_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento expiró. Hasta {fin}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # 2. Validación de ubicación (solo si requiere_ubic=True)
+    if evento.requiere_ubic:
+        if lat is None or lon is None:
+            return jsonify({"error": "No se proporcionaron coordenadas"}), 400
+        distancia_m = geodesic(
+            (evento.latitud, evento.longitud),
+            (float(lat), float(lon))
+        ).meters
+        if distancia_m > 500:
+            return jsonify({
+                "redirect": url_for("ubicacion_invalida", evento_id=evento.id)
+            })
+
+    # 3. Checar duplicados
+    if EventoQRRegistro.query.filter_by(
+        evento_id=evento.id,
+        familia_id=familia.id
+    ).first():
+        return jsonify({
+            "redirect": url_for(
+                "asistencia_exitosa",
+                evento_id=evento.id,
+                ya_asistio=1
+            )
+        })
+
+    # 4. Registrar asistencia y sumar puntos
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(
+        familia_id=familia.id,
+        evento_id=evento.id
+    ))
+    db.session.add(Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
+
+    db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log(
+        "escanear",
+        "EventoQR",
+        f"Familia '{familia.nombre}' (ID {familia.id}) escaneó el evento '{evento.nombre_evento}' (ID {evento.id})"
+    )
+
+    # 💌 Enviar correo de confirmación
+    enviar_correo_movimiento(
+        destinatario=familia.correo,
+        tipo='suma',
+        puntos=evento.puntos,
+        nombre_familia=familia.nombre,
+        motivo=f"Asistencia al evento: {evento.nombre_evento}"
+    )
+
+    return jsonify({
+        "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
+    })

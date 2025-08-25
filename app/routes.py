@@ -144,71 +144,44 @@ def quitar_acentos(cadena):
     )
 
 
-@app.route('/lista_familias', methods=['GET', 'POST'])
+@app.route("/lista_familias", methods=["POST"])
+@login_requerido_admin
 def lista_familias():
-    if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        correo = request.form.get('correo')
-        password = request.form.get('password')
+    import qrcode
+    import os
 
-        if nombre and correo and password:
-            # Normalizar el nombre
-            nombre_normalizado = quitar_acentos(nombre.strip().lower().replace(" ", ""))
-            familias = Familia.query.all()
-            for f in familias:
-                nombre_existente = quitar_acentos(f.nombre.strip().lower().replace(" ", ""))
-                if nombre_existente == nombre_normalizado:
-                    flash("Ya existe una familia con ese nombre", "error")
-                    return redirect(url_for('lista_familias'))
+    nombre = request.form.get("nombre")
+    correo = request.form.get("correo")
+    password = request.form.get("password")
 
-            # Validar duplicado por correo
-            if Familia.query.filter_by(correo=correo).first():
-                flash("Ese correo ya está registrado", "error")
-                return redirect(url_for('lista_familias'))
+    # Validar duplicado por correo
+    if Familia.query.filter_by(correo=correo).first():
+        flash("❌ Ese correo ya está registrado", "error")
+        return redirect(url_for("panel_admin"))
 
-            # Crear nueva familia
-            nueva_familia = Familia(nombre=nombre, correo=correo, password=password)
-            db.session.add(nueva_familia)
-            db.session.commit()
-            
-            
+    # Validar duplicado por nombre
+    nombre_normalizado = quitar_acentos(nombre.strip().lower().replace(" ", ""))
+    for fam in Familia.query.all():
+        nombre_existente = quitar_acentos(fam.nombre.strip().lower().replace(" ", ""))
+        if nombre_existente == nombre_normalizado:
+            flash("❌ Ya existe una familia con ese nombre", "error")
+            return redirect(url_for("panel_admin"))
 
-            # Generar QR
-            qr_url = url_for('ver_familia', familia_id=nueva_familia.id, _external=True)
-            qr = qrcode.make(qr_url)
-            qr_folder = os.path.join('app', 'static', 'qr')
-            os.makedirs(qr_folder, exist_ok=True)
-            qr_path = os.path.join(qr_folder, f'familia_{nueva_familia.id}.png')
-            qr.save(qr_path)
-            
-                    # ➕ Familia creada
-            entry = LogEntry(
-                timestamp=datetime.utcnow(),
-                user=session.get("nombre_usuario"),
-                role=session.get("rol"),
-                action="crear",
-                entity="Familia",
-                details=f"id={nueva_familia.id}, nombre={nueva_familia.nombre}"
-            )
-            db.session.add(entry)
-            db.session.commit()
+    # Crear nueva familia con qr_version inicial
+    nueva_familia = Familia(nombre=nombre, correo=correo, password=password, puntos=0)
+    nueva_familia.qr_version = 1
+    db.session.add(nueva_familia)
+    db.session.commit()
 
-            flash("Familia registrada exitosamente", "success")
-            return redirect(url_for('lista_familias'))
+    # Generar QR con versión en la URL
+    qr_url = url_for("ver_familia", familia_id=nueva_familia.id, _external=True) + f"?version_qr={nueva_familia.qr_version}"
+    qr = qrcode.make(qr_url)
+    qr_path = os.path.join(app.root_path, "static", "qr", f"familia_{nueva_familia.id}.png")
+    qr.save(qr_path)
 
-    # Búsqueda
-    termino_busqueda = request.args.get('buscar', '').strip()
-    if termino_busqueda:
-        termino_normalizado = quitar_acentos(termino_busqueda.lower())
-        familias = Familia.query.all()
-        familias = [
-            f for f in familias
-            if termino_normalizado in quitar_acentos(f.nombre.lower())
-        ]
-    else:
-        familias = Familia.query.all()
+    flash("✅ Familia creada exitosamente y QR generado", "success")
+    return redirect(url_for("panel_admin"))
 
-    return render_template('lista_familias.html', familias=familias, buscar=termino_busqueda)
 
 @app.route('/')
 def index():
@@ -240,13 +213,14 @@ def crear_familia():
 
     # ✅ Crear nueva familia
     nueva_familia = Familia(nombre=nombre, correo=correo, password=password)
-    db.session.add(nueva_familia)
+    nueva_familia.qr_version = 1
+    db.session.add(nueva_familia)    
     db.session.commit()
 
     # ✅ Generar código QR una sola vez
-    qr_url = url_for('ver_familia', familia_id=nueva_familia.id, _external=True)
+    qr_url = url_for('ver_familia', familia_id=nueva_familia.id, _external=True) + f"?version_qr={nueva_familia.qr_version}"
     qr = qrcode.make(qr_url)
-    qr_path = os.path.join('app', 'static', 'qr', f'familia_{nueva_familia.id}.png')
+    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{nueva_familia.id}.png')
     qr.save(qr_path)
 
     return jsonify({"mensaje": "Familia registrada exitosamente"}), 201
@@ -707,22 +681,40 @@ def escanear_qr():
         return redirect(url_for('login'))
     return render_template('escanear.html')
 
+# Mostrar la página lista_familias.html
+@app.route("/lista_familias", methods=["GET"])
+@login_requerido_admin
+def mostrar_lista_familias():
+    familias = Familia.query.all()
+    return render_template("lista_familias.html", familias=familias)
 
-@app.route('/familia/<int:familia_id>/qr')
-def mostrar_qr_familia(familia_id):
+@app.route("/familia/<int:familia_id>/qr")
+def generar_qr_familia(familia_id):
     import qrcode
     import os
-    from flask import send_file
 
-    # Generar la URL del perfil
-    url = url_for('ver_familia', familia_id=familia_id, _external=True)
+    familia = Familia.query.get_or_404(familia_id)
 
-    # Generar el QR
-    qr = qrcode.make(url)
-    ruta_temp = os.path.join('app', 'static', f'qr_familia_{familia_id}.png')
-    qr.save(ruta_temp)
+    # Si la familia no tiene versión aún, inicializar en 1
+    if not familia.qr_version:
+        familia.qr_version = 1
+        db.session.commit()
 
-    return send_file(ruta_temp, mimetype='image/png')
+    # Generar la URL con versionado
+    qr_url = url_for("ver_familia", familia_id=familia.id, _external=True) + f"?version_qr={familia.qr_version}"
+    qr = qrcode.make(qr_url)
+
+    # Guardar el QR en static/qr/familia_<id>.png
+    qr_path = os.path.join(app.root_path, "static", "qr", f"familia_{familia.id}.png")
+    if os.path.exists(qr_path):
+        try:
+            os.remove(qr_path)  # limpiar si ya existía un QR viejo
+        except OSError:
+            pass
+    qr.save(qr_path)
+
+    return send_file(qr_path, mimetype="image/png")
+
 
 
 @app.route("/login_familia", methods=["GET", "POST"])
@@ -1468,109 +1460,7 @@ from geopy.distance import geodesic
 from app import db
 from app.models import EventoQR, Familia, EventoQRRegistro, Transaccion
 
-@app.route('/validar_qr_evento', methods=["POST"])
-def validar_qr_evento():
-    data       = request.get_json()
-    evento_id  = data.get("evento_id")
-    lat        = data.get("lat")
-    lon        = data.get("lon")
-    familia_id = session.get("familia_id")
 
-    # 0. Comprobación básica
-    if not evento_id or not familia_id:
-        return jsonify({"error": "Faltan datos"}), 400
-
-    evento  = EventoQR.query.get(evento_id)
-    familia = Familia.query.get(familia_id)
-    if not evento or not familia:
-        return jsonify({"error": "Evento o familia no encontrada"}), 404
-
-    # 1. Fecha/hora actual en zona local
-    tz          = pytz.timezone("America/Mexico_City")
-    ahora_local = datetime.now(tz)
-
-    # valid_from
-    if evento.valid_from:
-        vf_utc   = evento.valid_from.replace(tzinfo=pytz.UTC)
-        vf_local = vf_utc.astimezone(tz)
-        if ahora_local < vf_local:
-            inicio = vf_local.strftime('%d/%m/%Y %H:%M')
-            return jsonify({
-                "error": f"El evento aún no está activo. Desde {inicio}",
-                "code": "fuera_de_fecha"
-            }), 400
-
-    # valid_to
-    if evento.valid_to:
-        vt_utc   = evento.valid_to.replace(tzinfo=pytz.UTC)
-        vt_local = vt_utc.astimezone(tz)
-        if ahora_local > vt_local:
-            fin = vt_local.strftime('%d/%m/%Y %H:%M')
-            return jsonify({
-                "error": f"El evento expiró. Hasta {fin}",
-                "code": "fuera_de_fecha"
-            }), 400
-
-    # 2. Validación de ubicación (solo si requiere_ubic=True)
-    if evento.requiere_ubic:
-        if lat is None or lon is None:
-            return jsonify({"error": "No se proporcionaron coordenadas"}), 400
-        distancia_m = geodesic(
-            (evento.latitud, evento.longitud),
-            (float(lat), float(lon))
-        ).meters
-        if distancia_m > 500:
-            return jsonify({
-                "redirect": url_for("ubicacion_invalida", evento_id=evento.id)
-            })
-
-    # 3. Checar duplicados
-    if EventoQRRegistro.query.filter_by(
-        evento_id=evento.id,
-        familia_id=familia.id
-    ).first():
-        return jsonify({
-            "redirect": url_for(
-                "asistencia_exitosa",
-                evento_id=evento.id,
-                ya_asistio=1
-            )
-        })
-
-    # 4. Registrar asistencia y sumar puntos
-    familia.puntos += evento.puntos
-    db.session.add(EventoQRRegistro(
-        familia_id=familia.id,
-        evento_id=evento.id
-    ))
-    db.session.add(Transaccion(
-        familia_id=familia.id,
-        tipo='suma',
-        puntos=evento.puntos,
-        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
-    ))
-
-    db.session.commit()
-    
-    # 📝 Registrar en LOG
-    registrar_log(
-        "escanear",
-        "EventoQR",
-        f"Familia '{familia.nombre}' (ID {familia.id}) escaneó el evento '{evento.nombre_evento}' (ID {evento.id})"
-    )
-
-    # 💌 Enviar correo de confirmación
-    enviar_correo_movimiento(
-        destinatario=familia.correo,
-        tipo='suma',
-        puntos=evento.puntos,
-        nombre_familia=familia.nombre,
-        motivo=f"Asistencia al evento: {evento.nombre_evento}"
-    )
-
-    return jsonify({
-        "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
-    })
 
 
 # Ruta en routes.py
@@ -2710,3 +2600,129 @@ def generar_qr_pendientes():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+from datetime import datetime
+import pytz
+from flask import request, jsonify, url_for, session
+from math import radians, sin, cos, sqrt, atan2
+from app import db
+from app.models import EventoQR, Familia, EventoQRRegistro, Transaccion
+
+def distancia_metros(lat1, lon1, lat2, lon2):
+    """Calcula distancia en metros entre dos coordenadas con Haversine"""
+    R = 6371000  # radio de la Tierra en metros
+    phi1, phi2 = radians(lat1), radians(lat2)
+    dphi = radians(lat2 - lat1)
+    dlambda = radians(lon2 - lon1)
+
+    a = sin(dphi/2)**2 + cos(phi1) * cos(phi2) * sin(dlambda/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+@app.route('/validar_qr_evento', methods=["POST"])
+def validar_qr_evento():
+    data       = request.get_json()
+    evento_id  = data.get("evento_id")
+    lat        = data.get("lat")
+    lon        = data.get("lon")
+    familia_id = session.get("familia_id")
+
+    # 0. Comprobación básica
+    if not evento_id or not familia_id:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    evento  = EventoQR.query.get(evento_id)
+    familia = Familia.query.get(familia_id)
+    if not evento or not familia:
+        return jsonify({"error": "Evento o familia no encontrada"}), 404
+
+    # 1. Fecha/hora actual en zona local
+    tz          = pytz.timezone("America/Mexico_City")
+    ahora_local = datetime.now(tz)
+
+    # valid_from
+    if evento.valid_from:
+        vf_utc   = evento.valid_from.replace(tzinfo=pytz.UTC)
+        vf_local = vf_utc.astimezone(tz)
+        if ahora_local < vf_local:
+            inicio = vf_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento aún no está activo. Desde {inicio}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # valid_to
+    if evento.valid_to:
+        vt_utc   = evento.valid_to.replace(tzinfo=pytz.UTC)
+        vt_local = vt_utc.astimezone(tz)
+        if ahora_local > vt_local:
+            fin = vt_local.strftime('%d/%m/%Y %H:%M')
+            return jsonify({
+                "error": f"El evento expiró. Hasta {fin}",
+                "code": "fuera_de_fecha"
+            }), 400
+
+    # 2. Validación de ubicación (solo si requiere_ubic=True)
+    if evento.requiere_ubic:
+        if lat is None or lon is None:
+            return jsonify({"error": "No se proporcionaron coordenadas"}), 400
+
+        distancia_m = distancia_metros(
+            float(evento.latitud), float(evento.longitud),
+            float(lat), float(lon)
+        )
+        if distancia_m > 500:  # mismo límite que ya usabas
+            return jsonify({
+                "redirect": url_for("ubicacion_invalida", evento_id=evento.id)
+            })
+
+    # 3. Checar duplicados
+    if EventoQRRegistro.query.filter_by(
+        evento_id=evento.id,
+        familia_id=familia.id
+    ).first():
+        return jsonify({
+            "redirect": url_for(
+                "asistencia_exitosa",
+                evento_id=evento.id,
+                ya_asistio=1
+            )
+        })
+
+    # 4. Registrar asistencia y sumar puntos
+    familia.puntos += evento.puntos
+    db.session.add(EventoQRRegistro(
+        familia_id=familia.id,
+        evento_id=evento.id
+    ))
+    db.session.add(Transaccion(
+        familia_id=familia.id,
+        tipo='suma',
+        puntos=evento.puntos,
+        descripcion=f"Asistencia al evento: {evento.nombre_evento}"
+    ))
+
+    db.session.commit()
+    
+    # 📝 Registrar en LOG
+    registrar_log(
+        "escanear",
+        "EventoQR",
+        f"Familia '{familia.nombre}' (ID {familia.id}) escaneó el evento '{evento.nombre_evento}' (ID {evento.id})"
+    )
+
+    # 💌 Enviar correo de confirmación
+    enviar_correo_movimiento(
+        destinatario=familia.correo,
+        tipo='suma',
+        puntos=evento.puntos,
+        nombre_familia=familia.nombre,
+        motivo=f"Asistencia al evento: {evento.nombre_evento}"
+    )
+
+    return jsonify({
+        "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
+    })
+
+
