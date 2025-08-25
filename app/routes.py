@@ -2502,6 +2502,19 @@ def _make_family_qr(familia):
     img.save(out_path)
     del img
 
+from flask import request, redirect, url_for, flash, jsonify
+from app import app, db
+from app.models import Familia
+from openpyxl import load_workbook
+import io, csv, tempfile, gc, os
+
+ALLOWED_EXTS = {'.xlsx', '.csv'}
+BATCH_SIZE = 300
+
+def _ext(filename: str) -> str:
+    i = filename.rfind('.')
+    return filename[i:].lower() if i != -1 else ''
+
 @app.route("/importar_excel_familias", methods=["POST"])
 @login_requerido_admin
 def importar_excel_familias():
@@ -2516,15 +2529,13 @@ def importar_excel_familias():
         return redirect(url_for("panel_admin"))
 
     try:
-        insertados = 0
-        duplicados = 0
+        insertados, duplicados = 0, 0
 
         if ext == ".csv":
             content = f.read()
             stream = io.TextIOWrapper(io.BytesIO(content), encoding="utf-8-sig", newline="")
             reader = csv.DictReader(stream)
             lote = []
-
             for row in reader:
                 nombre   = (row.get("nombre") or row.get("Nombre") or "").strip()
                 correo   = (row.get("correo") or row.get("Correo") or row.get("email") or "").strip().lower()
@@ -2533,15 +2544,12 @@ def importar_excel_familias():
 
                 if not nombre or not correo or not password:
                     continue
-
                 if Familia.query.filter_by(correo=correo).first():
                     duplicados += 1
                     continue
 
-                try:
-                    puntos_val = int(puntos) if puntos not in (None, "",) else 0
-                except ValueError:
-                    puntos_val = 0
+                try: puntos_val = int(puntos) if puntos not in (None, "",) else 0
+                except ValueError: puntos_val = 0
 
                 fam = Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val)
                 fam.qr_version = 1
@@ -2551,26 +2559,15 @@ def importar_excel_familias():
                     db.session.add_all(lote)
                     db.session.commit()
                     insertados += len(lote)
-
-                    for fam in lote:
-                        _make_family_qr(fam)
-
-                    lote.clear()
-                    gc.collect()
+                    lote.clear(); gc.collect()
 
             if lote:
                 db.session.add_all(lote)
                 db.session.commit()
                 insertados += len(lote)
-
-                for fam in lote:
-                    _make_family_qr(fam)
-
-                lote.clear()
-                gc.collect()
+                lote.clear(); gc.collect()
 
         else:
-            # XLSX con archivo temporal
             tmp_path = None
             try:
                 with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
@@ -2580,10 +2577,8 @@ def importar_excel_familias():
                 wb = load_workbook(tmp_path, read_only=True, data_only=True)
                 ws = wb.active
 
+                first, headers = True, None
                 lote = []
-                first = True
-                headers = None
-
                 for row in ws.iter_rows(values_only=True):
                     if first:
                         headers = [(str(c).strip().lower() if c is not None else "") for c in row]
@@ -2591,7 +2586,6 @@ def importar_excel_familias():
                         continue
 
                     cells = dict(zip(headers, row))
-
                     nombre   = (cells.get("nombre") or "").strip() if cells.get("nombre") else ""
                     correo   = (cells.get("correo") or cells.get("email") or "").strip().lower() if (cells.get("correo") or cells.get("email")) else ""
                     password = (cells.get("password") or "").strip() if cells.get("password") else ""
@@ -2599,15 +2593,12 @@ def importar_excel_familias():
 
                     if not nombre or not correo or not password:
                         continue
-
                     if Familia.query.filter_by(correo=correo).first():
                         duplicados += 1
                         continue
 
-                    try:
-                        puntos_val = int(puntos) if puntos not in (None, "",) else 0
-                    except (ValueError, TypeError):
-                        puntos_val = 0
+                    try: puntos_val = int(puntos) if puntos not in (None, "",) else 0
+                    except (ValueError, TypeError): puntos_val = 0
 
                     fam = Familia(nombre=nombre, correo=correo, password=password, puntos=puntos_val)
                     fam.qr_version = 1
@@ -2617,40 +2608,105 @@ def importar_excel_familias():
                         db.session.add_all(lote)
                         db.session.commit()
                         insertados += len(lote)
-
-                        for fam in lote:
-                            _make_family_qr(fam)
-
-                        lote.clear()
-                        gc.collect()
+                        lote.clear(); gc.collect()
 
                 if lote:
                     db.session.add_all(lote)
                     db.session.commit()
                     insertados += len(lote)
-
-                    for fam in lote:
-                        _make_family_qr(fam)
-
-                    lote.clear()
-                    gc.collect()
+                    lote.clear(); gc.collect()
 
                 wb.close()
             finally:
                 if tmp_path and os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except OSError:
-                        pass
+                    try: os.remove(tmp_path)
+                    except OSError: pass
 
-        flash(f"✅ Importación completa. Insertados: {insertados}. Duplicados: {duplicados}.", "success")
+        flash(f"✅ Importación completa. Insertados: {insertados}. Duplicados: {duplicados}. Ahora puedes generar los QR en lotes.", "success")
         return redirect(url_for("panel_admin"))
 
     except MemoryError:
         db.session.rollback()
-        flash("❌ Sin memoria suficiente para procesar el archivo. Intenta dividirlo o usar CSV.", "error")
+        flash("❌ Sin memoria al importar. Divide el archivo o usa CSV.", "error")
         return redirect(url_for("panel_admin"))
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Error al importar: {str(e)}", "error")
+        flash(f"❌ Error al importar: {e}", "error")
         return redirect(url_for("panel_admin"))
+
+from flask import jsonify, request
+import qrcode, os, gc
+from qrcode.constants import ERROR_CORRECT_L
+
+def _qr_folder():
+    folder = os.path.join(app.root_path, 'static', 'qr')
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+def _make_family_qr_optimized(familia):
+    # QR corto: ruta relativa + versionado
+    from flask import url_for
+    qr_url = url_for('ver_familia', familia_id=familia.id) + f'?version_qr={familia.qr_version or 1}'
+    qr = qrcode.QRCode(
+        version=2,
+        error_correction=ERROR_CORRECT_L,
+        box_size=6,
+        border=2
+    )
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    out_path = os.path.join(_qr_folder(), f'familia_{familia.id}.png')
+    if os.path.exists(out_path):
+        try: os.remove(out_path)
+        except OSError: pass
+    img.save(out_path)
+    del img
+
+@app.route("/admin/generar_qr_pendientes", methods=["POST"])
+@login_requerido_admin
+def generar_qr_pendientes():
+    """
+    Genera QR en lotes. Parámetros opcionales en JSON:
+    - last_id: último ID procesado (default 0)
+    - batch_size: tamaño de lote (default 200)
+    - only_missing: bool; si True, solo genera si el archivo PNG no existe (default True)
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        last_id = int(data.get("last_id", 0))
+        batch_size = int(data.get("batch_size", 200))
+        only_missing = bool(data.get("only_missing", True))
+
+        familias = (Familia.query
+                    .filter(Familia.id > last_id)
+                    .order_by(Familia.id.asc())
+                    .limit(batch_size)
+                    .all())
+
+        if not familias:
+            return jsonify({"processed": 0, "last_id": last_id, "done": True})
+
+        processed = 0
+        qr_dir = _qr_folder()
+
+        for fam in familias:
+            if not getattr(fam, "qr_version", None):
+                fam.qr_version = 1
+                db.session.commit()
+
+            png_path = os.path.join(qr_dir, f"familia_{fam.id}.png")
+            if only_missing and os.path.exists(png_path):
+                # ya existe
+                pass
+            else:
+                _make_family_qr_optimized(fam)
+            processed += 1
+
+        gc.collect()
+        new_last_id = familias[-1].id
+        return jsonify({"processed": processed, "last_id": new_last_id, "done": False})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
