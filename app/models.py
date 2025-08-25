@@ -103,7 +103,7 @@ class EventoQRRegistro(db.Model):
 
 class Beneficio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
+    nombre = db.Column(db.Text, nullable=False, unique=True)  # antes: String(100)
     puntos_requeridos = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
