@@ -7,6 +7,8 @@ import pytz
 from datetime import datetime
 import os
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+from app.extensions import login_manager
+
 
 app = Flask(__name__)
 
@@ -74,6 +76,14 @@ app.config['MAIL_DEFAULT_SENDER'] = 'pasaporte-no-reply@cela.edu.mx'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 mail = Mail(app)
+login_manager.init_app(app)
+
+from app.models import Familia, Admin
+
+@login_manager.user_loader
+def load_user(user_id):
+    # Flask-Login necesita devolver el usuario autenticado
+    return Familia.query.get(int(user_id)) or Admin.query.get(int(user_id))
 
 # =========================
 # Mantener sesión activa

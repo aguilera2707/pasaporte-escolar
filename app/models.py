@@ -1,3 +1,4 @@
+from flask_login import UserMixin
 from app import db
 from datetime import datetime
 import pytz
@@ -9,7 +10,7 @@ def hora_local_merida():
 
 # -------- MODELOS --------
 
-class Familia(db.Model):
+class Familia(db.Model,UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     correo = db.Column(db.String(100), unique=True, nullable=False)
@@ -49,7 +50,7 @@ class Transaccion(db.Model):
         return f'<Transacción {self.tipo} – {self.puntos}>'
 
 
-class Admin(db.Model):
+class Admin(db.Model,UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     usuario = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)

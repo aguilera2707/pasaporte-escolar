@@ -717,6 +717,8 @@ def generar_qr_familia(familia_id):
 
 
 
+from flask_login import login_user
+
 @app.route("/login_familia", methods=["GET", "POST"])
 def login_familia():
     if request.method == "POST":
@@ -724,31 +726,41 @@ def login_familia():
         password = request.form["password"]
 
         familia = Familia.query.filter_by(correo=correo).first()
-        if familia and familia.password == password:
-            session["familia_id"] = familia.id
+        if familia and familia.password == password:  # 🔑 Comparación directa
+            login_user(familia)
             return redirect(url_for("perfil_familia", familia_id=familia.id))
         else:
-            flash("Credenciales inválidas para familia", "error")
+            flash("❌ Credenciales inválidas para familia", "error")
             return render_template("login_unificado.html", active_tab="familia")
+
     return render_template("login_unificado.html", active_tab="familia")
+
 
 @app.route('/logout_familia')
 def logout_familia():
     session.pop('familia_id', None)
     return redirect(url_for('login_familia'))
 
-@app.route('/perfil_familia/<int:familia_id>')
-def perfil_familia(familia_id):
-    familia = Familia.query.get(familia_id)
-    if not familia:
-        return "Familia no encontrada", 404
+from flask_login import login_required, current_user
+from flask import render_template
 
-    transacciones = Transaccion.query.filter_by(familia_id=familia_id).order_by(Transaccion.fecha.desc()).all()
-    print("TRANSACCIONES ENCONTRADAS:", transacciones)  # <--- AQUÍ
-    
+@app.route('/perfil_familia/<int:familia_id>')
+@login_required
+def perfil_familia(familia_id):
+    # Si es administrador → puede ver cualquier familia
+    if hasattr(current_user, "rol") and current_user.rol == "admin":
+        familia = Familia.query.get_or_404(familia_id)
+    else:
+        # Si es familia → solo puede ver su propio perfil
+        if current_user.id != familia_id:
+            return "Acceso denegado", 403
+        familia = current_user
+
+    # Mantengo tu lógica previa
+    transacciones = Transaccion.query.filter_by(familia_id=familia.id).order_by(Transaccion.fecha.desc()).all()
     beneficios = Beneficio.query.all()
-    ultimo_evento = EventoQR.query.order_by(EventoQR.id.desc()).first()  # 🔹 nuevo
-    rol = session.get('rol')  # <--- obtener rol de sesión
+    ultimo_evento = EventoQR.query.order_by(EventoQR.id.desc()).first()
+    rol = session.get('rol')  # si aún usas el rol en los templates
 
     return render_template(
         'perfil_familia.html',
@@ -756,8 +768,9 @@ def perfil_familia(familia_id):
         transacciones=transacciones,
         beneficios=beneficios,
         ultimo_evento=ultimo_evento,
-        rol=rol  # <--- pasar rol al template
+        rol=rol
     )
+
 
 
 
