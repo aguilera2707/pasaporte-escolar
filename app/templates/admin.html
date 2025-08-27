@@ -77,7 +77,7 @@ body {
 
 {% if rol in ['admin', 'supervisor'] %}
     <h2>Familias Registradas</h2>
-    <!--<button id="btn-generar-qr" class="btn">Generar QR en lotes</button>-->
+    <button onclick="mostrarConfirmacionQR()" class="btn">Generar QR en lotes</button>
     <form id="formImportarExcel" method="POST" action="/importar_excel_familias" enctype="multipart/form-data" style="margin-top: 2em;">
         <label for="excelFile"><strong>📥 Importar familias desde Excel:</strong></label>
         <input type="file" name="excelFile" id="excelFile" accept=".xlsx" required style="margin: 0.5em;">
@@ -188,6 +188,31 @@ body {
 {% endif %}
 </div><!-- admin-contenedor -->
 
+<!-- Modal 1: Confirmación -->
+<div id="modalConfirmacionQR" class="admin-modal" style="display:none;">
+    <div class="admin-modal-box">
+        <h3>⚠️ Generar QR en lote</h3>
+        <p>Esto generará nuevos códigos QR para todas las familias.</p>
+        <p>¿Estás seguro de continuar?</p>
+        <div class="acciones">
+        <button onclick="solicitarPasswordQR()" class="btn-danger">Sí, continuar</button>
+        <button onclick="cerrarModalQR()" class="btn">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Contraseña -->
+<div id="modalPasswordQR" class="admin-modal" style="display:none;">
+    <div class="admin-modal-box">
+        <h3>🔐 Confirmación de identidad</h3>
+        <label for="passwordInputQR">Ingresa tu contraseña:</label><br>
+        <input type="password" id="passwordInputQR" required style="margin-top: 0.5em; padding: 0.5em; width: 100%; max-width: 300px; border-radius: 7px; border: 1px solid #ccc;">
+        <div class="acciones" style="margin-top: 1em;">
+        <button onclick="enviarGeneracionQR()" class="btn-danger">Confirmar generación</button>
+        <button type="button" onclick="cerrarModalQR()" class="btn">Cancelar</button>
+        </div>
+    </div>
+</div>
 
 
 <!-- Librerías externas -->
@@ -200,25 +225,53 @@ body {
 <!-- Script personalizado -->
 <script>
 
-document.getElementById('btn-generar-qr').addEventListener('click', async () => {
+function mostrarConfirmacionQR() {
+    document.getElementById("modalConfirmacionQR").style.display = "flex";
+}
+function solicitarPasswordQR() {
+    document.getElementById("modalConfirmacionQR").style.display = "none";
+    document.getElementById("modalPasswordQR").style.display = "flex";
+}
+function cerrarModalQR() {
+    document.getElementById("modalConfirmacionQR").style.display = "none";
+    document.getElementById("modalPasswordQR").style.display = "none";
+}
+
+async function enviarGeneracionQR() {
+    const password = document.getElementById("passwordInputQR").value.trim();
+    if (!password) return alert("Debes ingresar tu contraseña.");
+
     let last_id = 0, total = 0;
-    const batchSize = 200; // ajusta si quieres
-    while (true) {
-        const resp = await fetch('/admin/generar_qr_pendientes', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ last_id, batch_size: batchSize, only_missing: true })
-        });
-        const data = await resp.json();
-        if (data.error) { alert('Error: ' + data.error); break; }
-        total += (data.processed || 0);
-        last_id = data.last_id || last_id;
-        console.log(`Procesados: ${total} (last_id=${last_id})`);
-        if (data.done) { alert(`Listo: ${total} QR generados.`); break; }
-        // Pequeña pausa para no saturar
-        await new Promise(r => setTimeout(r, 200));
+    const batchSize = 200;
+
+    try {
+        while (true) {
+            const resp = await fetch('/admin/generar_qr_pendientes', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ last_id, batch_size: batchSize, only_missing: true, password })
+            });
+            if (resp.status === 401) {
+                alert("❌ Contraseña incorrecta");
+                break;
+            }
+            const data = await resp.json();
+            if (data.error) { alert('Error: ' + data.error); break; }
+            total += (data.processed || 0);
+            last_id = data.last_id || last_id;
+            if (data.done) { 
+                alert(`✅ Listo: ${total} QR generados.`); 
+                cerrarModalQR();
+                location.reload();
+                break; 
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+    } catch (err) {
+        alert("❌ Error en la generación de QR");
+        console.error(err);
     }
-});
+}
 
 
 
