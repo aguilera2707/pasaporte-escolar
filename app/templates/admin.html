@@ -77,7 +77,7 @@ body {
 
 {% if rol in ['admin', 'supervisor'] %}
     <h2>Familias Registradas</h2>
-    <button id="btn-generar-qr" class="btn">Generar QR en lotes</button>
+    <!--<button id="btn-generar-qr" class="btn">Generar QR en lotes</button>-->
     <form id="formImportarExcel" method="POST" action="/importar_excel_familias" enctype="multipart/form-data" style="margin-top: 2em;">
         <label for="excelFile"><strong>📥 Importar familias desde Excel:</strong></label>
         <input type="file" name="excelFile" id="excelFile" accept=".xlsx" required style="margin: 0.5em;">
