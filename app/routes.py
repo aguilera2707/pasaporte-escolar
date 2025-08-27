@@ -375,6 +375,7 @@ def registrar_transaccion():
             fecha=hora_mexico
         )
         db.session.add(nueva_transaccion)
+        db.session.add(familia)
         db.session.commit()
 
         # 📝 Registrar en LOG

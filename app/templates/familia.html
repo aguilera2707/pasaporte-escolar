@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
 
-    
-
     <title>Perfil de Familia</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/familia.css') }}">
+
+    <!-- ✅ DataTables y jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
 
 <body>
@@ -47,7 +50,6 @@
             <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Acreditación</option>
             <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
             <option value="penalizacion" {% if request.args.get('tipo') == 'penalizacion' %}selected{% endif %}>Penalización</option>
-
         </select>
 
         <label for="fecha_inicio">Desde:</label>
@@ -61,7 +63,7 @@
 
     <h2>Historial de transacciones</h2>
     {% if transacciones %}
-    <table class="transactions">
+    <table id="transactionsTable" class="transactions">
         <thead>
             <tr>
                 <th>Fecha</th>
@@ -79,6 +81,8 @@
                         Acreditación
                     {% elif transaccion.tipo == 'canje' %}
                         Canje
+                    {% elif transaccion.tipo == 'penalizacion' %}
+                        Penalización
                     {% else %}
                         {{ transaccion.tipo }}
                     {% endif %}
@@ -93,37 +97,47 @@
         <p><em>No hay transacciones que coincidan con los filtros seleccionados.</em></p>
     {% endif %}
 
-    <!-- Registrar nueva transacción -->
     <h2>Registrar transacción</h2>
     <form id="transaccionForm" class="transaction-form">
         <label for="tipo_reg">Tipo:</label>
-            {% if rol == 'admin' %}
-        <select name="tipo" id="tipo_reg" required>
-            {% if rol in ['admin', 'supervisor'] %}
-        <option value="suma" {% if request.args.get('tipo') == 'suma' %}selected{% endif %}>Suma</option>
-        <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
-        <option value="penalizacion" {% if request.args.get('tipo') == 'penalizacion' %}selected{% endif %}>Penalización</option>
 
-            {% else %}
-        <option value="canje" {% if request.args.get('tipo') == 'canje' %}selected{% endif %}>Canje</option>
-            {% endif %}
-</select>
+        {% if rol == 'admin' %}
+            <select name="tipo" id="tipo_reg" required>
+                <option value="suma">Suma</option>
+                <option value="canje">Canje</option>
+                <option value="penalizacion">Penalización</option>
+            </select>
+
+        {% elif rol == 'supervisor' %}
+            <select name="tipo" id="tipo_reg" required>
+                <option value="canje">Canje</option>
+                <option value="penalizacion">Penalización</option>
+            </select>
 
         {% else %}
-        <input type="hidden" name="tipo" value="canje">
-        <span class="tipo-fijo">Canje</span>
+            <input type="hidden" name="tipo" value="canje">
+            <span class="tipo-fijo">Canje</span>
         {% endif %}
-        
+
         <input type="number" name="puntos" required min="1" placeholder="Cantidad de puntos">
         <input type="text" name="descripcion" placeholder="Descripción">
         <button type="submit">Registrar</button>
     </form>
+
     <div id="mensaje-transaccion"></div>
 </div> <!-- cierre admin-contenedor -->
 
-    
+<script>
+$(document).ready(function() {
+    // ✅ Inicializar DataTable
+    const table = $("#transactionsTable").DataTable({
+        paging: true,
+        searching: true,
+        info: true,
+        order: [[0, "desc"]]
+    });
 
-    <script>
+    // ✅ Manejo del formulario
     document.getElementById("transaccionForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const formData = new FormData(this);
@@ -146,12 +160,31 @@
             div.innerText = resp.mensaje || resp.error;
             div.style.color = resp.mensaje ? "green" : "red";
             setTimeout(() => { div.innerText = ""; }, 4000);
-            if (resp.mensaje) location.reload();  // recarga si fue exitoso
+
+            if (resp.mensaje) {
+                // Traducir tipo
+                let tipoTexto = "";
+                if (data.tipo === "suma") tipoTexto = "Acreditación";
+                else if (data.tipo === "canje") tipoTexto = "Canje";
+                else if (data.tipo === "penalizacion") tipoTexto = "Penalización";
+
+                // Insertar fila nueva en DataTable
+                table.row.add([
+                    new Date().toLocaleString("es-MX"),
+                    tipoTexto,
+                    (data.tipo === "suma" ? Number(data.puntos) : -Number(data.puntos)),
+                    data.descripcion || "Sin descripción"
+                ]).draw(false);
+
+                // Resetear form
+                document.getElementById("transaccionForm").reset();
+            }
         })
         .catch(err => {
             console.error("Error:", err);
         });
     });
-    </script>
+});
+</script>
 </body>
 </html>
