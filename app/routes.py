@@ -727,8 +727,10 @@ def login_familia():
         password = request.form["password"]
 
         familia = Familia.query.filter_by(correo=correo).first()
-        if familia and familia.password == password:  # 🔑 Comparación directa
-            login_user(familia)
+        if familia and familia.password == password:  # ✅ ojo si luego encriptas
+            session["familia_id"] = familia.id
+            session["rol"] = "familia"
+            session["nombre_usuario"] = familia.nombre
             return redirect(url_for("perfil_familia", familia_id=familia.id))
         else:
             flash("❌ Credenciales inválidas para familia", "error")
@@ -739,23 +741,21 @@ def login_familia():
 
 @app.route('/logout_familia')
 def logout_familia():
-    session.pop('familia_id', None)
-    return redirect(url_for('login_familia'))
+    session.pop("familia_id", None)
+    session.pop("rol", None)
+    session.pop("nombre_usuario", None)
+    return redirect(url_for("login_familia"))
 
 from flask_login import login_required, current_user
 from flask import render_template
 
 @app.route('/perfil_familia/<int:familia_id>')
-@login_required
 def perfil_familia(familia_id):
-    # Si es administrador → puede ver cualquier familia
-    if hasattr(current_user, "rol") and current_user.rol == "admin":
-        familia = Familia.query.get_or_404(familia_id)
-    else:
-        # Si es familia → solo puede ver su propio perfil
-        if current_user.id != familia_id:
-            return "Acceso denegado", 403
-        familia = current_user
+    # Verifica que la familia logueada solo pueda ver su propio perfil
+    if session["familia_id"] != familia_id:
+        return "Acceso denegado", 403
+
+    familia = Familia.query.get_or_404(familia_id)
 
     # Mantengo tu lógica previa
     transacciones = Transaccion.query.filter_by(familia_id=familia.id).order_by(Transaccion.fecha.desc()).all()
@@ -1304,7 +1304,7 @@ def login_requerido_familia(f):
     def decorated_function(*args, **kwargs):
         if not session.get("familia_id"):
             flash("Debes iniciar sesión como familia para acceder.", "error")
-            return redirect(url_for("login"))
+            return redirect(url_for("login_familia"))
         return f(*args, **kwargs)
     return decorated_function
 
