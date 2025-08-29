@@ -87,12 +87,18 @@ app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB
 # =========================
 # Correo (igual que ya tenías)
 # =========================
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'pasaporte-no-reply@cela.edu.mx'
-app.config['MAIL_PASSWORD'] = 'grgiuhmaoobcgeap'
-app.config['MAIL_DEFAULT_SENDER'] = 'pasaporte-no-reply@cela.edu.mx'
+
+
+# --- Mail ---
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'pasaporte-no-reply@cela.edu.mx')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'grgiuhmaoobcgeap')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-no-reply@cela.edu.mx')
+app.config['MAIL_MAX_EMAILS'] = 50
+app.config['MAIL_DEBUG'] = True  # para ver más info en logs
 
 # =========================
 # Mantener sesión activa
