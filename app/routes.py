@@ -1296,7 +1296,20 @@ def crear_qr_evento():
 
     return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
 
+from functools import wraps
+from flask import session, redirect, url_for, flash
+
+def login_requerido_familia(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("familia_id"):
+            flash("Debes iniciar sesión como familia para acceder.", "error")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/escanear_evento/<int:evento_id>')
+@login_requerido_familia
 def escanear_evento_con_ubicacion(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
     return render_template('escanear_evento_con_ubicacion.html', evento=evento)

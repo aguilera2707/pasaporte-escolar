@@ -33,7 +33,11 @@ function mostrarModalExpirado(mensaje) {
     document.getElementById('mensaje-texto-expirado').textContent = mensaje;
     document.getElementById('mensaje-modal-expirado').style.display = 'flex';
     setTimeout(() => {
-        window.location.href = "{{ url_for('perfil_familia', familia_id=session.get('familia_id')) }}";
+        {% if familia_id %}
+            window.location.href = "{{ url_for('perfil_familia', familia_id=familia_id) }}";
+        {% else %}
+            window.location.href = "{{ url_for('login') }}";
+        {% endif %}
     }, 3000);
 }
 
@@ -41,7 +45,11 @@ function mostrarModalFuera(mensaje) {
     document.getElementById('mensaje-texto-fuera').textContent = mensaje;
     document.getElementById('mensaje-modal-fuera').style.display = 'flex';
     setTimeout(() => {
-        window.location.href = "{{ url_for('perfil_familia', familia_id=session.get('familia_id')) }}";
+        {% if familia_id %}
+            window.location.href = "{{ url_for('perfil_familia', familia_id=familia_id) }}";
+        {% else %}
+            window.location.href = "{{ url_for('login') }}";
+        {% endif %}
     }, 3000);
 }
 
