@@ -77,7 +77,11 @@ from app.models import Familia, Admin  # modelos existentes
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Familia.query.get(int(user_id)) or Admin.query.get(int(user_id))
+    if user_id.startswith("familia-"):
+        return Familia.query.get(int(user_id.split("-")[1]))
+    elif user_id.startswith("admin-"):
+        return Admin.query.get(int(user_id.split("-")[1]))
+    return None
 
 # =========================
 # Configuración general

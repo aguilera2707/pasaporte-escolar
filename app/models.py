@@ -10,7 +10,7 @@ def hora_local_merida():
 
 # -------- MODELOS --------
 
-class Familia(db.Model,UserMixin):
+class Familia(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     correo = db.Column(db.String(100), unique=True, nullable=False)
@@ -20,6 +20,10 @@ class Familia(db.Model,UserMixin):
 
     def __repr__(self):
         return f'<Familia {self.nombre} – {self.puntos} puntos>'
+
+    def get_id(self):
+        # ⚡ Diferencia familias de admins
+        return f"familia-{self.id}"
 
 
 class MovimientoPuntos(db.Model):
@@ -50,11 +54,11 @@ class Transaccion(db.Model):
         return f'<Transacción {self.tipo} – {self.puntos}>'
 
 
-class Admin(db.Model,UserMixin):
+class Admin(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     usuario = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)
-    rol = db.Column(db.String(20), default='admin')  # 'admin' o 'supervisor'
+    rol = db.Column(db.String(20), default='admin')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -70,6 +74,10 @@ class Admin(db.Model,UserMixin):
 
     def __repr__(self):
         return f'<Admin {self.usuario} ({self.rol})>'
+
+    def get_id(self):
+        # ⚡ Diferencia admins de familias
+        return f"admin-{self.id}"
 
 
 class EventoQR(db.Model):
