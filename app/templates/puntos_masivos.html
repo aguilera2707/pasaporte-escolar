@@ -5,114 +5,167 @@
     <title>Puntos Masivos - Cuponera Escolar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/puntos_masivos.css') }}" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-</head>
-<style>
-body {
-    background-image: url("{{ url_for('static', filename='img/PRUEBA5.jpg') }}");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-</style>
-<body>
+    <style>
+        body {
+        background-image: url("{{ url_for('static', filename='img/PRUEBA5.jpg') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        }
+        .admin-contenedor { background: rgba(255,255,255,.9); padding: 16px; border-radius: 10px; }
+        .flash { margin: 10px 0; padding: 8px 12px; border-radius: 6px; }
+        .flash.success { background: #e6ffed; border: 1px solid #34c759; }
+        .flash.error { background: #ffecec; border: 1px solid #ff3b30; }
+        .masivos-form-row { margin-top: 16px; display: grid; grid-template-columns: repeat(4,1fr) auto; gap: 10px; align-items: center; }
+        .btn-volver { text-decoration: none; }
+        .btn-primary { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+    </head>
+    <body>
     <div class="admin-bg"></div>
     <div class="admin-contenedor">
         <a href="{{ url_for('panel_admin') }}" class="btn-volver" style="margin-top:1.7em; display:inline-block;">← Volver al panel</a>
         <h1>Puntos Masivos</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
         {% endwith %}
 
         <form method="POST" id="form-masivos">
-            <div class="table-responsive">
-                <table id="tabla-familias" class="display">
-                    <thead>
-                        <tr>
-                            <th style="min-width:145px;">
-                                <input type="checkbox" id="select-all" style="margin-right:6px;" /> Seleccionar Todo
-                            </th>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Correo</th>
-                            <th>Puntos actuales</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for familia in familias %}
-                        <tr>
-                            <td><input type="checkbox" name="familia_ids[]" value="{{ familia.id }}" /></td>
-                            <td>{{ familia.id }}</td>
-                            <td>{{ familia.nombre }}</td>
-                            <td>{{ familia.correo }}</td>
-                            <td>{{ familia.puntos }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-responsive">
+            <table id="tabla-familias" class="display" style="width:100%">
+            <thead>
+            <tr>
+                <th style="min-width:145px;">
+                <input type="checkbox" id="select-all" style="margin-right:6px;" /> Seleccionar Todo
+                </th>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Puntos actuales</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for familia in familias %}
+                <tr>
+                <td><input type="checkbox" name="familia_ids[]" value="{{ familia.id }}" /></td>
+                <td>{{ familia.id }}</td>
+                <td>{{ familia.nombre }}</td>
+                <td>{{ familia.correo }}</td>
+                <td>{{ familia.puntos }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            </table>
+        </div>
 
-            <div class="masivos-form-row">
-                <label for="tipo">Acción:</label>
-                <select name="tipo" id="tipo" required>
-                    <option value="" disabled selected>Selecciona acción</option>
-                    <option value="suma">Sumar puntos</option>
-                    <option value="canje">Restar puntos</option>
-                </select>
+        <div class="masivos-form-row">
+                <div class="form-group">
+                    <label for="tipo">Acción:</label>
+                    <select name="tipo" id="tipo" required>
+                        <option value="" disabled selected>Selecciona acción</option>
+                        <option value="suma">Sumar puntos</option>
+                        <option value="canje">Restar puntos</option>
+                    </select>
+                </div>
 
-                <label for="puntos">Cantidad de puntos:</label>
-                <input type="number" name="puntos" id="puntos" min="1" required />
+                <div class="form-group">
+                    <label for="puntos">Cantidad de puntos:</label>
+                    <input type="number" name="puntos" id="puntos" min="1" required />
+                </div>
 
-                <label for="descripcion">Motivo/Descripción:</label>
-                <input type="text" name="descripcion" id="descripcion" required />
+                <div class="form-group">
+                    <label for="descripcion">Motivo/Descripción:</label>
+                    <input type="text" name="descripcion" id="descripcion" required />
+                </div>
 
-                <button type="submit" class="btn btn-primary">Aplicar a familias seleccionadas</button>
-            </div>
+                <button type="submit" class="btn-primary">Aplicar a familias seleccionadas</button>
+        </div>
+
         </form>
-        
     </div>
-
 
     <!-- jQuery y DataTables -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
-        $(document).ready(function() {
-            $('#tabla-familias').DataTable({
-                language: {
-                    search: "🔍 Buscar:",
-                    lengthMenu: "Mostrar _MENU_ registros",
-                    info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
-                    paginate: {
-                        previous: "←",
-                        next: "→"
-                    },
-                    zeroRecords: "No se encontraron coincidencias",
-                },
-                pageLength: 10,
-                lengthMenu: [5, 10, 20, 50, 100]
-            });
+        $(function () {
+        // 1) Inicializa DataTable UNA sola vez
+        const table = $('#tabla-familias').DataTable({
+            language: {
+            search: "🔍 Buscar:",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ familias",
+            paginate: { previous: "←", next: "→" },
+            zeroRecords: "No se encontraron coincidencias",
+            },
+            pageLength: 10,
+            lengthMenu: [5, 10, 20, 50, 100]
+        });
 
-            // Script para seleccionar/deseleccionar todos
-            $('#select-all').on('click', function() {
-                var rows = $('#tabla-familias').DataTable().rows({ 'search': 'applied' }).nodes();
-                $('input[type="checkbox"]', rows).prop('checked', this.checked);
-            });
+        // 2) Persistencia de selección entre páginas/filtros
+        const seleccionadas = new Set();
 
-            // Si algún checkbox individual cambia, actualiza el checkbox "select-all"
-            $('#tabla-familias tbody').on('change', 'input[type="checkbox"]', function(){
-                if(!this.checked){
-                    var el = $('#select-all').get(0);
-                    if(el && el.checked && ('indeterminate' in el)){
-                        el.indeterminate = true;
-                    }
-                }
+        // Click individual
+        $('#tabla-familias').on('change', 'input[name="familia_ids[]"]', function () {
+            const id = this.value;
+            if (this.checked) seleccionadas.add(id);
+            else seleccionadas.delete(id);
+
+            // Actualiza estado del "select-all" en la página actual
+            const currentChecks = $('#tabla-familias input[name="familia_ids[]"]');
+            const tot = currentChecks.length;
+            const marcadas = currentChecks.filter(':checked').length;
+            const el = $('#select-all').get(0);
+            if (el) {
+            el.checked = (marcadas === tot && tot > 0);
+            el.indeterminate = (marcadas > 0 && marcadas < tot);
+            }
+        });
+
+        // Redibujar (cambio de página/filtro): re-aplica checks
+        table.on('draw', function () {
+            $('#tabla-familias input[name="familia_ids[]"]').each(function () {
+            this.checked = seleccionadas.has(this.value);
             });
+            // Recalcula select-all
+            const currentChecks = $('#tabla-familias input[name="familia_ids[]"]');
+            const tot = currentChecks.length;
+            const marcadas = currentChecks.filter(':checked').length;
+            const el = $('#select-all').get(0);
+            if (el) {
+            el.checked = (marcadas === tot && tot > 0);
+            el.indeterminate = (marcadas > 0 && marcadas < tot);
+            }
+        });
+
+        // Select-all de la PÁGINA ACTUAL
+        $('#select-all').on('click', function () {
+            const checked = $(this).prop('checked');
+            $('#tabla-familias input[name="familia_ids[]"]').each(function () {
+            this.checked = checked;
+            const id = this.value;
+            if (checked) seleccionadas.add(id);
+            else seleccionadas.delete(id);
+            });
+            this.indeterminate = false;
+        });
+
+        // 3) Antes de enviar el form, inyecta TODAS las seleccionadas como hidden
+        $('#form-masivos').on('submit', function () {
+            // Limpia previos por si re-envías
+            $('input[name="familia_ids[]"][type="hidden"]').remove();
+            for (const id of seleccionadas) {
+            $('<input>')
+                .attr({ type: 'hidden', name: 'familia_ids[]', value: id })
+                .appendTo('#form-masivos');
+            }
+        });
         });
     </script>
 </body>

@@ -183,3 +183,49 @@ h1 {
     align-items: center;
     gap: 0.5em; /* espacio entre lupa/texto y campo */
 }
+.masivos-form-row input[type="number"],
+.masivos-form-row input[type="text"],
+.masivos-form-row select {
+    width: 100%;         /* ocupa todo el espacio de su celda */
+    max-width: 300px;    /* límite para que no se extiendan demasiado */
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.masivos-form-row label {
+    text-align: right;   /* etiqueta alineada a la derecha */
+    font-weight: bold;
+    color: #850f0f;
+    margin-right: 8px;
+}
+
+.masivos-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-end; /* ✅ alinea labels con inputs */
+    margin-top: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column; /* ✅ label arriba, input abajo */
+    flex: 1 1 220px;        /* ancho flexible con mínimo */
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 6px;     /* separa label del input */
+    color: var(--rojo-oscuro);
+}
+
+.form-group input,
+.form-group select {
+    padding: 8px 10px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 6px;
+    font-size: 14px;
+    max-width: 280px;
+}

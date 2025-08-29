@@ -1842,25 +1842,30 @@ def descargar_pdf_qr_evento(evento_id):
 def puntos_masivos():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
-    rol = session.get('rol')
-    if rol != 'admin':
+    if session.get('rol') != 'admin':
         flash('No tienes permisos para acceder a esta página', 'error')
         return redirect(url_for('panel_admin'))
 
     familias = Familia.query.all()
 
     if request.method == 'POST':
-        ids_seleccionados = request.form.getlist('familia_ids')  # lista de ids seleccionados
-        tipo = request.form.get('tipo')  # 'suma' o 'canje'
-        puntos = request.form.get('puntos')
+        # 🔒 Tomamos TODO lo que llegó con ese name y lo DESDUPLICAMOS
+        raw_ids = request.form.getlist('familia_ids[]') or request.form.getlist('familia_ids')
+        try:
+            ids_seleccionados = sorted({int(x) for x in raw_ids if str(x).strip()})
+        except ValueError:
+            ids_seleccionados = []
+
+        tipo = request.form.get('tipo')            # 'suma' o 'canje'
+        puntos_str = request.form.get('puntos')
         descripcion = request.form.get('descripcion')
 
-        if not ids_seleccionados or not puntos or not tipo or not descripcion:
+        if not ids_seleccionados or not puntos_str or not tipo or not descripcion:
             flash('Completa todos los campos y selecciona al menos una familia', 'error')
             return redirect(url_for('puntos_masivos'))
 
         try:
-            puntos = int(puntos)
+            puntos = int(puntos_str)
             if puntos <= 0:
                 flash('Los puntos deben ser un número positivo', 'error')
                 return redirect(url_for('puntos_masivos'))
@@ -1868,47 +1873,53 @@ def puntos_masivos():
             flash('Los puntos deben ser un número válido', 'error')
             return redirect(url_for('puntos_masivos'))
 
-        # Procesar cada familia seleccionada
+        # ⚙️ Procesar cada familia única
         for fid in ids_seleccionados:
-            familia = Familia.query.get(int(fid))
-            if familia:
-                if tipo == 'suma':
-                    familia.puntos += puntos
-                elif tipo == 'canje':
-                    familia.puntos -= puntos
-                    if familia.puntos < 0:
-                        familia.puntos = 0
-                # Registrar transacción
-                nueva_transaccion = Transaccion(
-                    familia_id=familia.id,
-                    tipo=tipo,
-                    puntos=puntos,
-                    descripcion=descripcion,
-                    fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
-                )
-                db.session.add(nueva_transaccion)
-                
+            familia = Familia.query.get(fid)
+            if not familia:
+                continue
+
+            if tipo == 'suma':
+                familia.puntos += puntos
+            elif tipo == 'canje':
+                familia.puntos = max(0, familia.puntos - puntos)
+
+            nueva = Transaccion(
+                familia_id=familia.id,
+                tipo=tipo,
+                puntos=puntos if tipo == 'suma' else puntos,  # mantén tu convención
+                descripcion=descripcion,
+                fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
+            )
+            db.session.add(nueva)
+
+            # Correo
+            try:
                 enviar_correo_movimiento(familia.correo, familia.nombre, puntos, tipo, descripcion)
+            except Exception:
+                pass
 
         db.session.commit()
-        
-        
-            # 🔢 Puntos masivos
-        entry = LogEntry(
+
+        # 🧮 Usa el conteo de IDs únicos para el mensaje y log
+        total_afectadas = len(ids_seleccionados)
+
+        db.session.add(LogEntry(
             timestamp=datetime.utcnow(),
             user=session.get("nombre_usuario"),
             role=session.get("rol"),
             action="masivo_" + tipo,
             entity="Familia",
-            details=f"{len(ids_seleccionados)} familias, pts={puntos}"
-        )
-        db.session.add(entry)
+            details=f"{total_afectadas} familias, pts={puntos}"
+        ))
         db.session.commit()
-        
-        flash(f'Se han actualizado los puntos de {len(ids_seleccionados)} familias.', 'success')
+
+        flash(f'Se han actualizado los puntos de {total_afectadas} familia(s).', 'success')
         return redirect(url_for('puntos_masivos'))
 
     return render_template('puntos_masivos.html', familias=familias)
+
+
 
 from app import app, db
 from flask import render_template, redirect, url_for, request, flash, session
