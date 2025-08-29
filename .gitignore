@@ -1,0 +1,10 @@
+*.db
+.env
+# Ignorar base de datos local
+instance/*.db
+*.sqlite3*.db
+venv/
+__pycache__/
+*.pyc
+instance/
+migrations/versions/__pycache__/
