@@ -45,7 +45,7 @@ body {
                     <tbody>
                         {% for familia in familias %}
                         <tr>
-                            <td><input type="checkbox" name="familia_ids" value="{{ familia.id }}" /></td>
+                            <td><input type="checkbox" name="familia_ids[]" value="{{ familia.id }}" /></td>
                             <td>{{ familia.id }}</td>
                             <td>{{ familia.nombre }}</td>
                             <td>{{ familia.correo }}</td>
