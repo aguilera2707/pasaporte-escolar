@@ -68,7 +68,9 @@ if uri.startswith("sqlite:///") or uri.startswith("sqlite:////"):
             pass
 
 migrate = Migrate(app, db)
-mail = Mail(app)
+
+
+
 login_manager.init_app(app)
 
 from app.models import Familia, Admin  # modelos existentes
@@ -99,6 +101,21 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'grgiuhmaoobcgeap')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-no-reply@cela.edu.mx')
 app.config['MAIL_MAX_EMAILS'] = 50
 app.config['MAIL_DEBUG'] = True  # para ver más info en logs
+
+# Asegurar modalidad única (DESPUÉS de leer env)
+if app.config['MAIL_USE_SSL']:
+    app.config['MAIL_USE_TLS'] = False
+elif app.config['MAIL_USE_TLS']:
+    app.config['MAIL_USE_SSL'] = False
+else:
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)  # ← ahora sí, después de configurar
+
+login_manager.init_app(app)
+
+
 
 # =========================
 # Mantener sesión activa
