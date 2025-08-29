@@ -64,6 +64,7 @@ navigator.geolocation.getCurrentPosition(
         fetch("/validar_ubicacion_evento", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify(data)
         })
         .then(res => res.json().then(data => ({ status: res.status, body: data })))
