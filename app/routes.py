@@ -97,9 +97,11 @@ def login():
             session["admin"] = admin.usuario
             session["rol"] = admin.rol
             session["nombre_usuario"] = admin.usuario  # <-- Guardamos el nombre del admin aquí
+            session.permanent = True   # 🔑 asegura que la sesión dure 3 horas (lo que configuraste en __init__)
+
             print(f"[DEBUG] Login exitoso: {admin.usuario} con rol {admin.rol}")
             entry = LogEntry(
-                timestamp=datetime.utcnow(),   
+                timestamp=datetime.utcnow(),
                 user=admin.usuario,
                 role=admin.rol,
                 action="inicio sesión",
@@ -116,6 +118,7 @@ def login():
 
     # Método GET
     return render_template("login_unificado.html", active_tab="admin")
+
 
 
 @app.route("/logout")

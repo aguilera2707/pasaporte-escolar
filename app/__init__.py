@@ -11,6 +11,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from app.extensions import login_manager  # mantiene tu login_view
 
+
 app = Flask(__name__)
 
 # =========================
@@ -35,7 +36,7 @@ if uri.startswith(("postgresql://", "postgresql+psycopg2://")):
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Pool solo para Postgres (ya no lo usarás, pero lo dejamos por compatibilidad) ---
+# --- Pool solo para Postgres (compatibilidad) ---
 if uri.startswith(("postgresql://", "postgresql+psycopg2://")):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "pool_size": 5,
@@ -55,7 +56,6 @@ db = SQLAlchemy(app)
 
 # --- PRAGMAs y ajustes solo para SQLite ---
 if uri.startswith("sqlite:///") or uri.startswith("sqlite:////"):
-    # habilitar FK, WAL y sync eficiente
     @event.listens_for(Engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         try:
@@ -68,7 +68,6 @@ if uri.startswith("sqlite:///") or uri.startswith("sqlite:////"):
             pass
 
 migrate = Migrate(app, db)
-
 
 
 login_manager.init_app(app)
@@ -87,15 +86,15 @@ def load_user(user_id):
 # Configuración general
 # =========================
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-super-secreta-123')
-app.permanent_session_lifetime = timedelta(minutes=30)
+
+# 🔑 Cambiado de 30 min a 3 horas
+app.permanent_session_lifetime = timedelta(hours=5)
+
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB
 
 # =========================
-# Correo (igual que ya tenías)
+# Correo
 # =========================
-
-
-# --- Mail ---
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
@@ -104,9 +103,9 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'pasaporte-no-reply@cel
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'grgiuhmaoobcgeap')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-no-reply@cela.edu.mx')
 app.config['MAIL_MAX_EMAILS'] = 50
-app.config['MAIL_DEBUG'] = True  # para ver más info en logs
+app.config['MAIL_DEBUG'] = True
 
-# Asegurar modalidad única (DESPUÉS de leer env)
+# Asegurar modalidad única
 if app.config['MAIL_USE_SSL']:
     app.config['MAIL_USE_TLS'] = False
 elif app.config['MAIL_USE_TLS']:
@@ -115,10 +114,9 @@ else:
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USE_SSL'] = False
 
-mail = Mail(app)  # ← ahora sí, después de configurar
+mail = Mail(app)
 
 login_manager.init_app(app)
-
 
 
 # =========================
@@ -126,7 +124,8 @@ login_manager.init_app(app)
 # =========================
 @app.before_request
 def mantener_sesion_activa():
-    session.permanent = True
+    session.permanent = True  # 🔑 asegura que todas las sesiones duren 3h
+
 
 # =========================
 # Filtro para hora local
