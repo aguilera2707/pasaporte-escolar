@@ -1841,6 +1841,11 @@ def descargar_pdf_qr_evento(evento_id):
     
     return send_file(buffer, as_attachment=True, download_name=f"{evento.nombre_evento}_QR.pdf", mimetype='application/pdf')
 
+from concurrent.futures import ThreadPoolExecutor
+
+# 💡 Crea el ejecutor global (al inicio del archivo o justo debajo de tus imports)
+executor = ThreadPoolExecutor(max_workers=3)
+
 @app.route('/puntos-masivos', methods=['GET', 'POST'])
 def puntos_masivos():
     if 'admin_id' not in session:
@@ -1852,14 +1857,13 @@ def puntos_masivos():
     familias = Familia.query.all()
 
     if request.method == 'POST':
-        # 🔒 Tomamos TODO lo que llegó con ese name y lo DESDUPLICAMOS
         raw_ids = request.form.getlist('familia_ids[]') or request.form.getlist('familia_ids')
         try:
             ids_seleccionados = sorted({int(x) for x in raw_ids if str(x).strip()})
         except ValueError:
             ids_seleccionados = []
 
-        tipo = request.form.get('tipo')            # 'suma' o 'canje'
+        tipo = request.form.get('tipo')
         puntos_str = request.form.get('puntos')
         descripcion = request.form.get('descripcion')
 
@@ -1876,7 +1880,9 @@ def puntos_masivos():
             flash('Los puntos deben ser un número válido', 'error')
             return redirect(url_for('puntos_masivos'))
 
-        # ⚙️ Procesar cada familia única
+        total_afectadas = 0
+
+        # ⚙️ Procesar y actualizar DB
         for fid in ids_seleccionados:
             familia = Familia.query.get(fid)
             if not familia:
@@ -1890,22 +1896,17 @@ def puntos_masivos():
             nueva = Transaccion(
                 familia_id=familia.id,
                 tipo=tipo,
-                puntos=puntos if tipo == 'suma' else puntos,  # mantén tu convención
+                puntos=puntos,
                 descripcion=descripcion,
                 fecha=datetime.now(pytz.timezone('America/Mexico_City')).replace(tzinfo=None)
             )
             db.session.add(nueva)
+            total_afectadas += 1
 
-            # Correo
-            try:
-                enviar_correo_movimiento(familia.correo, familia.nombre, puntos, tipo, descripcion)
-            except Exception:
-                pass
+            # ✉️ Envío de correo en segundo plano
+            executor.submit(enviar_correo_movimiento, familia.correo, familia.nombre, puntos, tipo, descripcion)
 
         db.session.commit()
-
-        # 🧮 Usa el conteo de IDs únicos para el mensaje y log
-        total_afectadas = len(ids_seleccionados)
 
         db.session.add(LogEntry(
             timestamp=datetime.utcnow(),
@@ -1917,11 +1918,12 @@ def puntos_masivos():
         ))
         db.session.commit()
 
-        flash(f'Se han actualizado los puntos de {total_afectadas} familia(s).', 'success')
+        # 🚀 Mensaje inmediato (ya no espera a todos los correos)
+        flash(f'📨 Se han actualizado los puntos de {total_afectadas} familia(s). '
+            f'Los correos se están enviando en segundo plano.', 'success')
         return redirect(url_for('puntos_masivos'))
 
     return render_template('puntos_masivos.html', familias=familias)
-
 
 
 from app import app, db

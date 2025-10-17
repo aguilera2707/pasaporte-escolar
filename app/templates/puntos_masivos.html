@@ -144,15 +144,24 @@
             }
         });
 
-        // Select-all de la PÁGINA ACTUAL
+        // ✅ Select-all GLOBAL (todas las páginas)
         $('#select-all').on('click', function () {
             const checked = $(this).prop('checked');
-            $('#tabla-familias input[name="familia_ids[]"]').each(function () {
-            this.checked = checked;
-            const id = this.value;
-            if (checked) seleccionadas.add(id);
-            else seleccionadas.delete(id);
+
+            // Recorre TODAS las filas del DataTable, no solo las visibles
+            table.rows().every(function () {
+                const node = this.node();
+                const checkbox = $(node).find('input[name="familia_ids[]"]');
+                const id = checkbox.val();
+                if (checked) {
+                    seleccionadas.add(id);
+                    checkbox.prop('checked', true);
+                } else {
+                    seleccionadas.delete(id);
+                    checkbox.prop('checked', false);
+                }
             });
+
             this.indeterminate = false;
         });
 
