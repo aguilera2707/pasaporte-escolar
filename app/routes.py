@@ -2161,15 +2161,13 @@ def resetear_base_datos():
     )
 
 
-
-
+from flask import current_app
+from flask_mail import Message
+from app import mail
 
 def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo):
     print(f"[DEBUG] FUNCION llamada: enviar_correo_movimiento({destinatario}, {puntos}, {tipo})")
-    
-    from flask_mail import Message
-    from app import mail
-    
+
     if tipo == "suma":
         asunto = f"✅ Has ganado {puntos} puntos"
         cuerpo = (
@@ -2197,11 +2195,13 @@ def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo)
     msg = Message(subject=asunto, recipients=[destinatario], body=cuerpo)
 
     try:
-        mail.send(msg)
-        print(f"[INFO] Correo enviado a {destinatario}")
+        # ✅ Importante: asegurar el contexto Flask en hilos secundarios
+        with current_app.app_context():
+            mail.send(msg)
+            print(f"[INFO] Correo enviado a {destinatario}")
     except Exception as e:
         print(f"[ERROR] Fallo al enviar correo: {e}")
-        
+
 
 
 @app.route("/admin/editar_contrasena/<int:admin_id>", methods=["GET", "POST"])
