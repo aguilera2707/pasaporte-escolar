@@ -61,29 +61,7 @@ body {
             </div>
         </div>
 
-        <div class="beneficios">
-            <h2>🎁 Beneficios disponibles</h2>
-            {% if beneficios %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Beneficio</th>
-                            <th>Puntos requeridos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for beneficio in beneficios %}
-                        <tr>
-                            <td>{{ beneficio.nombre }}</td>
-                            <td>{{ beneficio.puntos_requeridos }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>No hay beneficios disponibles actualmente.</p>
-            {% endif %}
-        </div>
+
 
         <div class="historial">
             <h2>📜 Historial de transacciones</h2>
@@ -113,6 +91,31 @@ body {
                 </div>
             {% else %}
                 <p>No hay transacciones registradas.</p>
+            {% endif %}
+        </div>
+
+
+                <div class="beneficios">
+            <h2>🎁 Beneficios disponibles</h2>
+            {% if beneficios %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Beneficio</th>
+                            <th>Puntos requeridos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for beneficio in beneficios %}
+                        <tr>
+                            <td>{{ beneficio.nombre }}</td>
+                            <td>{{ beneficio.puntos_requeridos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay beneficios disponibles actualmente.</p>
             {% endif %}
         </div>
     </div>
