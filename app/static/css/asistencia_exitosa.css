@@ -4,22 +4,26 @@
     --rojo-profundo: #850f0f;
     --negro: #000;
     --blanco: #fff;
-    --gris-fondo: #ededed;
+    --gris-fondo: #f0f0f0;
+    --oro: #d4af37;
+
+    --verde-exito: #4CAF50; /* verde exacto del ícono de éxito */
 }
 
-/* Fullscreen */
-body, html {
+/* Full screen sin scroll lateral */
+html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-    width: 100%;
+    background: var(--gris-fondo);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow-x: hidden;
 }
 
-/* Fondo gris suave */
+/* Contenedor centrado y responsive */
 .pantalla {
-    height: 100vh;
+    min-height: 100vh;
     width: 100vw;
-    background: var(--gris-fondo);
 
     display: flex;
     justify-content: center;
@@ -27,164 +31,133 @@ body, html {
 
     padding: 20px;
     box-sizing: border-box;
+    overflow-y: auto; /* permite scroll interno si el contenido crece */
 }
 
-/* TARJETA GRANDE PERO ELEGANTE */
+/* Tarjeta Premium tipo App */
 .mensaje {
-    background-color: var(--blanco);
-    border-radius: 20px;
-    padding: 2.2rem 1.8rem;
-
+    background: var(--blanco);
+    border-radius: 26px;
     width: 100%;
-    max-width: 540px;        /* 🔥 Tamaño perfecto en celular */
-    min-height: 340px;
+    max-width: 600px;
+
+    padding: 3rem 2.2rem;
 
     text-align: center;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
 
-    animation: fadeIn 0.35s ease-out;
-}
-
-/* Animación */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(25px) scale(0.97); }
-    to   { opacity: 1; transform: none; }
-}
-
-/* TÍTULO GRANDE PERO ARMÓNICO */
-.mensaje h1 {
-    font-size: 2.1rem;
-    margin-bottom: 1.2rem;
-    font-weight: 800;
-    color: var(--rojo-principal);
-    line-height: 1.2;
-}
-
-/* Amarillo/Alerta */
-.mensaje .alerta {
-    color: var(--rojo-profundo);
-}
-
-/* TEXTO LEGIBLE */
-.mensaje p {
-    font-size: 1.25rem;
-    line-height: 1.45;
-    margin: 0.8rem 0;
-    color: var(--negro);
-}
-
-/* BOTÓN GRANDE Y ELEGANTE */
-.mensaje a {
-    display: block;
-    width: 100%;
-    margin-top: 1.8rem;
-
-    padding: 15px 0;
-    background: var(--rojo-principal);
-    color: var(--blanco);
-
-    font-size: 1.35rem;
-    font-weight: bold;
-
-    text-decoration: none;
-    border-radius: 10px;
-
-    transition: background 0.25s ease, transform 0.1s ease;
-}
-
-.mensaje a:hover {
-    background: var(--rojo-profundo);
-    transform: translateY(-2px);
-}
-
-/* 📱 Ajustes móviles lindos */
-@media (max-width: 600px) {
-    .mensaje {
-        padding: 2rem 1.5rem;
-        max-width: 90%;
-    }
-
-    .mensaje h1 {
-        font-size: 2rem;
-    }
-
-    .mensaje p {
-        font-size: 1.2rem;
-    }
-
-    .mensaje a {
-        font-size: 1.3rem;
-        padding: 15px;
-    }
-}
-/* Contenedor fullscreen */
-.pantalla {
-    height: 100vh;
-    width: 100vw;
-    background: var(--gris-fondo);
+    border: 4px solid var(--oro); /* valor default */
 
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
+    gap: 1.4rem;
 
-    padding: 12px;               /* 🔥 MENOS padding = ya no se desborda */
-    box-sizing: border-box;
-
-    overflow: hidden;            /* 🚫 NO SCROLL */
+    animation: fadeIn 0.25s ease-out;
 }
 
-/* Tarjeta */
-.mensaje {
-    background-color: var(--blanco);
-    border-radius: 20px;
-    padding: 2rem 1.6rem;         /* 🔥 Menos padding vertical */
-    width: 100%;
-    max-width: 520px;             /* 🔥 Ajuste exacto para móviles */
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+/* Animación suave de entrada */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-    animation: fadeIn 0.35s ease-out;
+/* ============================= */
+/*   COLORES SEGÚN TIPO MENSAJE  */
+/* ============================= */
 
-    overflow: hidden;             /* 🔥 Evita scroll interno */
+/* 🟡 Advertencia */
+.mensaje.advertencia {
+    border-color: var(--oro);
+}
+
+/* 🟢 Éxito */
+.mensaje.exito {
+    border-color: var(--verde-exito);
+    animation: pulsoExito 0.6s ease-out;
+}
+
+/* Animación Premium del borde verde */
+@keyframes pulsoExito {
+    0%   { box-shadow: 0 0 0 rgba(76,175,80,0.0); }
+    50%  { box-shadow: 0 0 30px rgba(76,175,80,0.35); }
+    100% { box-shadow: 0 0 0 rgba(76,175,80,0.0); }
+}
+
+/* Icono premium */
+.icono {
+    font-size: 3.2rem;
+    display: block;
+    margin-bottom: 0.6rem;
+}
+
+/* Títulos */
+.mensaje h1 {
+    font-size: 2.4rem;
+    margin: 0;
+    font-weight: 800;
+    color: var(--rojo-principal);
+    line-height: 1.25;
+}
+
+/* Texto */
+.mensaje p {
+    font-size: 1.3rem;
+    color: #333;
+    margin: 0.2rem 0;
+    line-height: 1.45;
 }
 
 /* Botón */
 .mensaje a {
     display: block;
-    width: 100%;
-    max-width: 100%;             /* 🔥 Nunca se desborda */
-    box-sizing: border-box;
-
-    padding: 15px;
-    margin-top: 1.8rem;
+    margin-top: 1.2rem;
 
     background: var(--rojo-principal);
     color: var(--blanco);
-    font-size: 1.3rem;
+
+    padding: 16px 0;
+    border-radius: 14px;
+
+    text-decoration: none;
+    font-size: 1.45rem;
     font-weight: bold;
 
-    border-radius: 12px;
-    text-decoration: none;
-
-    transition: background 0.25s ease, transform 0.1s ease;
+    transition: 0.25s;
 }
 
-/* Ajustes móviles */
+.mensaje a:hover {
+    background: var(--rojo-profundo);
+    transform: scale(1.03);
+}
+
+/* ============================= */
+/*   RESPONSIVE – Ajustes móvil  */
+/* ============================= */
 @media (max-width: 600px) {
+
     .mensaje {
-        padding: 1.8rem 1.3rem;   /* 🔥 todo más compacto */
+        padding: 2.4rem 1.6rem;
+        padding-bottom: 3.6rem !important; /* evita que se salga el botón */
+        margin-bottom: 2rem;
+        gap: 1.2rem;
     }
 
     .mensaje h1 {
-        font-size: 1.9rem;
+        font-size: 2.1rem;
+    }
+
+    .icono {
+        font-size: 3rem;
     }
 
     .mensaje p {
-        font-size: 1.15rem;
+        font-size: 1.25rem;
     }
 
     .mensaje a {
-        font-size: 1.25rem;
-        padding: 14px;
+        font-size: 1.35rem;
+        padding: 15px;
+        margin-bottom: 0.6rem;
     }
 }

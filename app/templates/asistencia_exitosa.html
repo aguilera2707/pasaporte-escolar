@@ -2,26 +2,48 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+
+    <!-- 📌 Necesario para que escale perfecto en celulares -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
     <title>Asistencia registrada</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia_exitosa.css') }}">
+
+    <!-- Forzamos recarga del CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/asistencia_exitosa.css') }}?v=20251126">
 </head>
+
 <body>
+
     <div class="pantalla">
-        <div class="mensaje">
+
+        <!-- AGREGAMOS LA CLASE DINÁMICA: exito o advertencia -->
+        <div class="mensaje {% if ya_asistio %}advertencia{% else %}exito{% endif %}">
+
             {% if ya_asistio %}
-                <h1 class="alerta">⚠️ Ya escaneaste este evento</h1>
-                <p>Ya habías registrado tu asistencia al evento <strong>{{ evento.nombre_evento }}</strong>.</p>
+                <span class="icono">⚠️</span>
+                <h1>Ya escaneaste este evento</h1>
+
+                <p>Ya habías registrado tu asistencia al evento 
+                    <strong>{{ evento.nombre_evento }}</strong>.
+                </p>
                 <p>No se sumaron puntos en esta ocasión.</p>
+
             {% else %}
-                <h1>✅ ¡Asistencia registrada!</h1>
-                <p>Gracias por asistir al evento <strong>{{ evento.nombre_evento }}</strong>.</p>
+                <span class="icono">✅</span>
+                <h1>¡Asistencia registrada!</h1>
+
+                <p>Gracias por asistir al evento 
+                    <strong>{{ evento.nombre_evento }}</strong>.
+                </p>
                 <p>Se han sumado <strong>{{ evento.puntos }}</strong> puntos a tu cuenta.</p>
             {% endif %}
 
-            <br><br>
-            <a href="{{ url_for('perfil_familia', familia_id=familia.id) }}">Volver a mi perfil</a>
+            <a href="{{ url_for('perfil_familia', familia_id=familia.id) }}">
+                Volver a mi perfil
+            </a>
+
         </div>
     </div>
+
 </body>
 </html>
