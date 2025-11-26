@@ -132,6 +132,13 @@ body {
         scannerContainer.style.display = 'block';
         scanButton.style.display = 'none';
 
+        setTimeout(() => {
+            document.getElementById("scanner-container").scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+                });
+            }, 300);
+
         if (!scanner) {
             scanner = new QrScanner(videoElem, result => {
                 statusText.textContent = '⏳ Enviando QR...';
@@ -189,6 +196,15 @@ iniciarTemporizadorInactividad();
 scanButton?.addEventListener('click', () => {
     scannerContainer.style.display = 'block';
     scanButton.style.display = 'none';
+
+
+        // 📌 AUTO-CENTRAR la cámara en pantalla
+    setTimeout(() => {
+        document.getElementById("scanner-container").scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }, 300);
 
     if (!scanner) {
         scanner = new QrScanner(videoElem, result => {
