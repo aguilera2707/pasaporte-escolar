@@ -352,3 +352,56 @@ table tr:nth-child(odd) td {
         padding: 10px 0;
     }
 }
+
+/* 🔥 MODAL DE ESCANEO */
+#modal-scanner-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(3px);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+#modal-scanner {
+    background: #ffffff;
+    padding: 18px;
+    border-radius: 15px;
+    text-align: center;
+    width: 95%;
+    max-width: 380px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+}
+
+#qr-video-modal {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+#btn-cerrar-modal {
+    margin-top: 12px;
+    background: rgb(150, 1, 1);
+    color: white;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#btn-cerrar-modal:hover {
+    background: #8a0000;
+}
+/* Corrige padding del body para que el modal quede realmente centrado */
+#modal-scanner-overlay {
+    padding: 0 !important;
+}
