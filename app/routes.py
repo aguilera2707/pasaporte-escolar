@@ -22,6 +22,22 @@ from flask import session
 from datetime import datetime
 import pytz
 
+
+MX_TZ = pytz.timezone("America/Mexico_City")
+UTC_TZ = pytz.utc
+
+def dtlocal_to_utc_naive(dt_str: str | None):
+    """
+    dt_str: 'YYYY-MM-DDTHH:MM' de <input datetime-local>
+    Interpreta como CDMX y guarda como UTC naive.
+    """
+    if not dt_str:
+        return None
+    naive = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+    local_aware = MX_TZ.localize(naive)
+    utc_aware = local_aware.astimezone(UTC_TZ)
+    return utc_aware.replace(tzinfo=None)  # UTC naive
+
 def registrar_log(action, entity, details=""):
     """Registra una acción en el Log de Actividades"""
     tz = pytz.timezone('America/Merida')
@@ -1274,8 +1290,8 @@ def crear_qr_evento():
             latitud=latitud,
             longitud=longitud,
             requiere_ubic=requiere_ubic,
-            valid_from=datetime.strptime(valid_from, '%Y-%m-%dT%H:%M') if valid_from else None,
-            valid_to=datetime.strptime(valid_to, '%Y-%m-%dT%H:%M')   if valid_to   else None
+            valid_from=dtlocal_to_utc_naive(valid_from),
+            valid_to=dtlocal_to_utc_naive(valid_to)
         )
         db.session.add(evento)
         db.session.flush()  # para obtener evento.id sin commit
@@ -1290,14 +1306,27 @@ def crear_qr_evento():
 
         evento.qr_filename = qr_fname
         db.session.commit()
-        
+
         # 📝 Registrar en LOG
         registrar_log("crear", "EventoQR", f"Evento '{nombre_evento}' creado con {puntos} puntos")
 
         flash('🎯 Evento QR creado con éxito.', 'success')
         return redirect(url_for('crear_qr_evento'))
 
+    # ✅ SOLO PARA MOSTRAR (UTC naive -> hora local CDMX)
+    tz = pytz.timezone("America/Mexico_City")
+
+    def utc_naive_to_local(dt_utc_naive):
+        if not dt_utc_naive:
+            return None
+        return pytz.utc.localize(dt_utc_naive).astimezone(tz)
+
+    for e in eventos:
+        e.valid_from_local = utc_naive_to_local(e.valid_from)
+        e.valid_to_local   = utc_naive_to_local(e.valid_to)
+
     return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
+
 
 from functools import wraps
 from flask import session, redirect, url_for, flash
@@ -1343,27 +1372,61 @@ def validar_ubicacion_evento():
     if not evento or not familia:
         return jsonify({"error": "Evento o familia no encontrada"}), 404
 
-    # --- 1) Validación rápida de rango de fecha/hora en hora local ---
-    tz          = pytz.timezone("America/Mexico_City")
-    ahora_local = datetime.now(tz)
+    # --- 1) Validación de rango de fecha/hora (robusta) ---
+    tz = pytz.timezone("America/Mexico_City")
+    now_utc = datetime.utcnow()  # UTC naive
 
+    def dt_utc_naive_to_mx(dt_naive_utc):
+        return pytz.utc.localize(dt_naive_utc).astimezone(tz)
+
+    def dt_local_naive_to_utc_naive(dt_naive_local):
+        local_aware = tz.localize(dt_naive_local)
+        return local_aware.astimezone(pytz.utc).replace(tzinfo=None)
+
+    # valid_from
     if evento.valid_from:
-        vf_local = tz.localize(evento.valid_from)
-        if ahora_local < vf_local:
+        vf = evento.valid_from
+
+        # Asumir UTC naive
+        vf_utc_naive = vf
+        vf_local = dt_utc_naive_to_mx(vf_utc_naive)
+
+        # Si parece que "aún no inicia", probar si estaba guardado como LOCAL naive
+        if now_utc < vf_utc_naive:
+            vf_utc_naive_alt = dt_local_naive_to_utc_naive(vf)
+            if abs((now_utc - vf_utc_naive_alt).total_seconds()) < abs((now_utc - vf_utc_naive).total_seconds()):
+                vf_utc_naive = vf_utc_naive_alt
+                vf_local = dt_utc_naive_to_mx(vf_utc_naive)
+
+        if now_utc < vf_utc_naive:
             msg = vf_local.strftime('%d/%m/%Y %H:%M')
             return jsonify({
                 "error": f"El evento aún no está activo. Disponible desde {msg}",
                 "code": "fuera_de_fecha"
             }), 400
 
+    # valid_to
     if evento.valid_to:
-        vt_local = tz.localize(evento.valid_to)
-        if ahora_local > vt_local:
+        vt = evento.valid_to
+
+        # Asumir UTC naive
+        vt_utc_naive = vt
+        vt_local = dt_utc_naive_to_mx(vt_utc_naive)
+
+        # Si parece que "ya expiró", probar si estaba guardado como LOCAL naive
+        if now_utc > vt_utc_naive:
+            vt_utc_naive_alt = dt_local_naive_to_utc_naive(vt)
+            if abs((now_utc - vt_utc_naive_alt).total_seconds()) < abs((now_utc - vt_utc_naive).total_seconds()):
+                vt_utc_naive = vt_utc_naive_alt
+                vt_local = dt_utc_naive_to_mx(vt_utc_naive)
+
+        if now_utc > vt_utc_naive:
             msg = vt_local.strftime('%d/%m/%Y %H:%M')
             return jsonify({
                 "error": f"El evento expiró. Válido hasta {msg}",
                 "code": "qr_expirado"
             }), 400
+
 
     # --- 2) Validación de ubicación ---
     if evento.requiere_ubic:
@@ -1612,34 +1675,53 @@ from datetime import datetime
 
 # ... tu decorador requiere_rol ...
 
+from datetime import datetime
+import pytz
+from flask import render_template, request, redirect, url_for, flash
+
 @app.route('/admin/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
 @requiere_rol('admin')
 def editar_evento(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
-    lugares = LugarFrecuente.query.all()   # <-- cargamos los lugares frecuentes
+    lugares = LugarFrecuente.query.all()
+
+    tz = pytz.timezone("America/Mexico_City")
+
+    def utc_naive_to_local_input_str(dt_utc_naive):
+        """
+        Convierte datetime naive (asumido UTC) a string para <input datetime-local>
+        en zona America/Mexico_City: 'YYYY-MM-DDTHH:MM'
+        """
+        if not dt_utc_naive:
+            return ""
+        local_dt = pytz.utc.localize(dt_utc_naive).astimezone(tz)
+        return local_dt.strftime("%Y-%m-%dT%H:%M")
 
     if request.method == 'POST':
         evento.nombre_evento = request.form['nombre_evento']
-        evento.puntos         = int(request.form['puntos'])
-        evento.latitud        = float(request.form['latitud'])
-        evento.longitud       = float(request.form['longitud'])
-        evento.requiere_ubic  = 'requiere_ubic' in request.form
+        evento.puntos        = int(request.form['puntos'])
+        evento.latitud       = float(request.form['latitud'])
+        evento.longitud      = float(request.form['longitud'])
+        evento.requiere_ubic = 'requiere_ubic' in request.form
 
-        valid_from = request.form.get('valid_from')
+        valid_from = request.form.get('valid_from')  # 'YYYY-MM-DDTHH:MM' o ''
         valid_to   = request.form.get('valid_to')
 
-        evento.valid_from = datetime.strptime(valid_from, '%Y-%m-%dT%H:%M') if valid_from else None
-        evento.valid_to   = datetime.strptime(valid_to,   '%Y-%m-%dT%H:%M') if valid_to   else None
+        # Guardar SIEMPRE en UTC naive
+        evento.valid_from = dtlocal_to_utc_naive(valid_from)
+        evento.valid_to   = dtlocal_to_utc_naive(valid_to)
 
         db.session.commit()
-        
-        # 📝 Registrar en LOG
+
         registrar_log("editar", "EventoQR", f"Evento ID {evento.id} actualizado: {evento.nombre_evento}")
         flash('Evento actualizado correctamente.', 'success')
         return redirect(url_for('crear_qr_evento'))
 
-    return render_template('editar_evento.html', evento=evento, lugares=lugares)
+    # GET: precargar inputs en hora local (CDMX)
+    evento.valid_from_local = utc_naive_to_local_input_str(evento.valid_from)
+    evento.valid_to_local   = utc_naive_to_local_input_str(evento.valid_to)
 
+    return render_template('editar_evento.html', evento=evento, lugares=lugares)
 
 
 
@@ -2680,32 +2762,65 @@ def validar_qr_evento():
     if not evento or not familia:
         return jsonify({"error": "Evento o familia no encontrada"}), 404
 
-    # 1. Fecha/hora actual en zona local
-    tz          = pytz.timezone("America/Mexico_City")
-    ahora_local = datetime.now(tz)
 
-    # valid_from
+        # 1. Validación de fecha/hora (robusta)
+    tz = pytz.timezone("America/Mexico_City")
+    now_utc = datetime.utcnow()  # UTC naive (consistente)
+
+    def dt_utc_naive_to_mx(dt_naive_utc):
+        return pytz.utc.localize(dt_naive_utc).astimezone(tz)
+
+    def dt_local_naive_to_utc_naive(dt_naive_local):
+        local_aware = tz.localize(dt_naive_local)
+        return local_aware.astimezone(pytz.utc).replace(tzinfo=None)
+
+    # --- valid_from ---
     if evento.valid_from:
-        vf_utc   = evento.valid_from.replace(tzinfo=pytz.UTC)
-        vf_local = vf_utc.astimezone(tz)
-        if ahora_local < vf_local:
+        vf = evento.valid_from
+
+        # Intento 1: tratar vf como UTC naive (lo más común en servidores)
+        vf_utc_naive = vf
+        vf_local = dt_utc_naive_to_mx(vf_utc_naive)
+
+        # Si con ese supuesto el evento queda "aún no inicia" pero en realidad debería ya estar activo,
+        # entonces probablemente vf fue guardado como LOCAL naive. Lo corregimos.
+        if now_utc < vf_utc_naive:
+            vf_utc_naive_alt = dt_local_naive_to_utc_naive(vf)
+            # tomamos el que tenga más sentido (el más cercano a ahora)
+            if abs((now_utc - vf_utc_naive_alt).total_seconds()) < abs((now_utc - vf_utc_naive).total_seconds()):
+                vf_utc_naive = vf_utc_naive_alt
+                vf_local = dt_utc_naive_to_mx(vf_utc_naive)
+
+        if now_utc < vf_utc_naive:
             inicio = vf_local.strftime('%d/%m/%Y %H:%M')
             return jsonify({
                 "error": f"El evento aún no está activo. Desde {inicio}",
                 "code": "fuera_de_fecha"
             }), 400
 
-    # valid_to
+    # --- valid_to ---
     if evento.valid_to:
-        vt_utc   = evento.valid_to.replace(tzinfo=pytz.UTC)
-        vt_local = vt_utc.astimezone(tz)
-        if ahora_local > vt_local:
+        vt = evento.valid_to
+
+        # Intento 1: tratar vt como UTC naive
+        vt_utc_naive = vt
+        vt_local = dt_utc_naive_to_mx(vt_utc_naive)
+
+        # Si con ese supuesto el evento "ya expiró", probamos si en realidad estaba guardado como LOCAL naive
+        if now_utc > vt_utc_naive:
+            vt_utc_naive_alt = dt_local_naive_to_utc_naive(vt)
+            if abs((now_utc - vt_utc_naive_alt).total_seconds()) < abs((now_utc - vt_utc_naive).total_seconds()):
+                vt_utc_naive = vt_utc_naive_alt
+                vt_local = dt_utc_naive_to_mx(vt_utc_naive)
+
+        if now_utc > vt_utc_naive:
             fin = vt_local.strftime('%d/%m/%Y %H:%M')
             return jsonify({
                 "error": f"El evento expiró. Hasta {fin}",
                 "code": "fuera_de_fecha"
             }), 400
 
+    
     # 2. Validación de ubicación (solo si requiere_ubic=True)
     if evento.requiere_ubic:
         if lat is None or lon is None:

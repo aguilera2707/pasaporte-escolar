@@ -33,12 +33,10 @@ body {
     </label>
 
     <label>Válido desde:</label>
-    <input type="datetime-local" name="valid_from"
-            value="{{ evento.valid_from and evento.valid_from.strftime('%Y-%m-%dT%H:%M') }}">
+    <input type="datetime-local" name="valid_from" value="{{ evento.valid_from_local }}">
 
     <label>Válido hasta:</label>
-    <input type="datetime-local" name="valid_to"
-            value="{{ evento.valid_to   and evento.valid_to.strftime('%Y-%m-%dT%H:%M') }}">
+    <input type="datetime-local" name="valid_to" value="{{ evento.valid_to_local }}">
 
     <label for="lugar_frecuente"><strong>Lugar frecuente:</strong></label>
     <select id="lugar_frecuente" onchange="llenarCoordenadas()" style="width:100%;padding:8px;">
