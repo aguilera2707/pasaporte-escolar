@@ -89,8 +89,8 @@ class EventoQR(db.Model):
     latitud = db.Column(db.Float)
     longitud = db.Column(db.Float)
     requiere_ubic = db.Column(db.Boolean, default=True)
-    valid_from = db.Column(db.DateTime, nullable=True)
-    valid_to = db.Column(db.DateTime, nullable=True)
+    valid_from = db.Column(db.DateTime(timezone=True), nullable=True)
+    valid_to   = db.Column(db.DateTime(timezone=True), nullable=True)
 
     def __repr__(self):
         return f'<EventoQR {self.nombre_evento} – {self.puntos} puntos>'

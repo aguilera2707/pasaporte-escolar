@@ -38,6 +38,23 @@ def dtlocal_to_utc_naive(dt_str: str | None):
     utc_aware = local_aware.astimezone(UTC_TZ)
     return utc_aware.replace(tzinfo=None)  # UTC naive
 
+
+import pytz
+from datetime import datetime
+
+MX_TZ = pytz.timezone("America/Merida")  # Mérida (GMT-6). También sirve Mexico_City, pero mejor Merida.
+
+def dtlocal_to_utc_aware(dt_str: str | None):
+    """
+    Convierte 'YYYY-MM-DDTHH:MM' (datetime-local, hora local Mérida)
+    a datetime AWARE en UTC (tzinfo=UTC) para guardar en Postgres/Neon.
+    """
+    if not dt_str:
+        return None
+    naive = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+    local_aware = MX_TZ.localize(naive)
+    return local_aware.astimezone(pytz.utc)  # ✅ aware UTC
+
 def registrar_log(action, entity, details=""):
     """Registra una acción en el Log de Actividades"""
     tz = pytz.timezone('America/Merida')
@@ -1290,8 +1307,9 @@ def crear_qr_evento():
             latitud=latitud,
             longitud=longitud,
             requiere_ubic=requiere_ubic,
-            valid_from=dtlocal_to_utc_naive(valid_from),
-            valid_to=dtlocal_to_utc_naive(valid_to)
+            valid_from=dtlocal_to_utc_aware(valid_from),
+            valid_to=dtlocal_to_utc_aware(valid_to)
+
         )
         db.session.add(evento)
         db.session.flush()  # para obtener evento.id sin commit
@@ -1314,16 +1332,19 @@ def crear_qr_evento():
         return redirect(url_for('crear_qr_evento'))
 
     # ✅ SOLO PARA MOSTRAR (UTC naive -> hora local CDMX)
-    tz = pytz.timezone("America/Mexico_City")
+        tz = pytz.timezone("America/Merida")
 
-    def utc_naive_to_local(dt_utc_naive):
-        if not dt_utc_naive:
-            return None
-        return pytz.utc.localize(dt_utc_naive).astimezone(tz)
+        def to_local(dt):
+            if not dt:
+                return None
+            # si viene naive, asumir UTC; si viene aware, convertir directo
+            if dt.tzinfo is None:
+                dt = pytz.utc.localize(dt)
+            return dt.astimezone(tz)
 
-    for e in eventos:
-        e.valid_from_local = utc_naive_to_local(e.valid_from)
-        e.valid_to_local   = utc_naive_to_local(e.valid_to)
+        for e in eventos:
+            e.valid_from_local = to_local(e.valid_from)
+            e.valid_to_local   = to_local(e.valid_to)
 
     return render_template('crear_qr_evento.html', lugares=lugares, eventos=eventos)
 
@@ -1667,6 +1688,22 @@ def eliminar_eventos():
     flash('Eventos eliminados correctamente', 'success')
     return redirect(url_for('crear_qr_evento'))
 
+
+
+tz = pytz.timezone("America/Merida")
+
+def dt_to_local_input_str(dt):
+    """
+    Convierte datetime (aware o naive) a string para <input datetime-local>
+    en zona America/Merida: 'YYYY-MM-DDTHH:MM'
+    """
+    if not dt:
+        return ""
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)  # si es naive, asumimos UTC
+    local_dt = dt.astimezone(tz)
+    return local_dt.strftime("%Y-%m-%dT%H:%M")
+
 from flask import render_template, request, redirect, url_for, flash, session
 from app.models import EventoQR, LugarFrecuente, EventoQRRegistro, Transaccion
 from app import db
@@ -1708,8 +1745,8 @@ def editar_evento(evento_id):
         valid_to   = request.form.get('valid_to')
 
         # Guardar SIEMPRE en UTC naive
-        evento.valid_from = dtlocal_to_utc_naive(valid_from)
-        evento.valid_to   = dtlocal_to_utc_naive(valid_to)
+        evento.valid_from = dtlocal_to_utc_aware(valid_from)
+        evento.valid_to   = dtlocal_to_utc_aware(valid_to)
 
         db.session.commit()
 
@@ -1718,8 +1755,8 @@ def editar_evento(evento_id):
         return redirect(url_for('crear_qr_evento'))
 
     # GET: precargar inputs en hora local (CDMX)
-    evento.valid_from_local = utc_naive_to_local_input_str(evento.valid_from)
-    evento.valid_to_local   = utc_naive_to_local_input_str(evento.valid_to)
+    evento.valid_from_local = dt_to_local_input_str(evento.valid_from)
+    evento.valid_to_local   = dt_to_local_input_str(evento.valid_to)
 
     return render_template('editar_evento.html', evento=evento, lugares=lugares)
 
