@@ -99,9 +99,9 @@ app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
 app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'pasaporte-no-reply@cela.edu.mx')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'grgiuhmaoobcgeap')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-no-reply@cela.edu.mx')
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'pasaporte-noreply@cela.edu.mx')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'pmwobotexpbzdxxp')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-noreply@cela.edu.mx')
 app.config['MAIL_MAX_EMAILS'] = 50
 app.config['MAIL_DEBUG'] = True
 
