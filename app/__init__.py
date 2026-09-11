@@ -85,10 +85,15 @@ def load_user(user_id):
 # =========================
 # Configuración general
 # =========================
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-super-secreta-123')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    raise RuntimeError('Falta configurar SECRET_KEY en las variables de entorno')
 
 # 🔑 Cambiado de 30 min a 3 horas
 app.permanent_session_lifetime = timedelta(hours=5)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'true').lower() == 'true'
 
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB
 
@@ -100,7 +105,7 @@ app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
 app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'pasaporte-noreply@cela.edu.mx')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'pmwobotexpbzdxxp')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'pasaporte-noreply@cela.edu.mx')
 app.config['MAIL_MAX_EMAILS'] = 50
 app.config['MAIL_DEBUG'] = True

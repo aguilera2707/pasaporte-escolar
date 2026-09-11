@@ -93,7 +93,7 @@ body {
         <h1>Tu código QR</h1>
 
         <div class="qr-wrapper">
-            <img src="{{ url_for('static', filename='qr/familia_' ~ familia.id ~ '.png') }}?v={{ familia.qr_version }}" alt="QR de la familia">
+            <img src="{{ url_for('generar_qr_familia', familia_id=familia.id) }}?v={{ familia.qr_version }}" alt="QR de la familia">
 
             <form method="GET" action="{{ url_for('descargar_pdf_qr_familia', familia_id=familia.id) }}">
                 <button class="btn-download" type="submit">📥 Descargar QR (PDF)</button>

@@ -1,6 +1,6 @@
 from flask import (
     Flask, jsonify, request, render_template,
-    redirect, url_for, session, flash, Response, send_file
+    redirect, url_for, session, flash, Response, send_file, abort
 )
 from functools import wraps
 from datetime import datetime, timedelta
@@ -77,6 +77,29 @@ def login_requerido_admin(f):
         return f(*args, **kwargs)
     return decorada
 
+
+def login_requerido_familia(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("rol") != "familia" or not session.get("familia_id"):
+            flash("Debes iniciar sesión como familia para acceder.", "error")
+            return redirect(url_for("login_familia"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def carpeta_qr_familias():
+    """Los QR familiares son privados; nunca deben quedar bajo /static."""
+    folder = os.path.join(app.instance_path, "private_qr")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+@app.route('/static/qr/<path:filename>')
+def bloquear_qr_familiar_legacy(filename):
+    """Evita que QR familiares antiguos sigan accesibles por URL predecible."""
+    abort(404)
+
 @app.route("/admin")
 @login_requerido_admin
 def panel_admin():
@@ -118,6 +141,21 @@ def requiere_rol(*roles_permitidos):
     return decorator
 
 
+def acceso_familia_o_staff(f):
+    """Permite el acceso al staff o a la familia dueña del recurso."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        familia_id = kwargs.get("familia_id")
+        if session.get("admin_id") and session.get("rol") in ("admin", "supervisor"):
+            return f(*args, **kwargs)
+        if session.get("rol") == "familia" and session.get("familia_id") == familia_id:
+            return f(*args, **kwargs)
+        if session.get("familia_id") or session.get("admin_id"):
+            abort(403)
+        return redirect(url_for("login_familia"))
+    return wrapper
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -126,6 +164,7 @@ def login():
 
         admin = Admin.query.filter_by(usuario=usuario).first()
         if admin and admin.verificar_password(password):
+            session.clear()
             session["admin_id"] = admin.id
             session["admin"] = admin.usuario
             session["rol"] = admin.rol
@@ -212,7 +251,7 @@ def lista_familias():
     # Generar QR con versión en la URL
     qr_url = url_for("ver_familia", familia_id=nueva_familia.id, _external=True) + f"?version_qr={nueva_familia.qr_version}"
     qr = qrcode.make(qr_url)
-    qr_path = os.path.join(app.root_path, "static", "qr", f"familia_{nueva_familia.id}.png")
+    qr_path = os.path.join(carpeta_qr_familias(), f"familia_{nueva_familia.id}.png")
     qr.save(qr_path)
 
     flash("✅ Familia creada exitosamente y QR generado", "success")
@@ -226,6 +265,7 @@ def index():
 from app.routes import quitar_acentos  # asegúrate de importar esta función si no está en el mismo archivo
 
 @app.route("/familias", methods=["POST"])
+@requiere_rol('admin')
 def crear_familia():
     import qrcode
     import os
@@ -256,7 +296,7 @@ def crear_familia():
     # ✅ Generar código QR una sola vez
     qr_url = url_for('ver_familia', familia_id=nueva_familia.id, _external=True) + f"?version_qr={nueva_familia.qr_version}"
     qr = qrcode.make(qr_url)
-    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{nueva_familia.id}.png')
+    qr_path = os.path.join(carpeta_qr_familias(), f'familia_{nueva_familia.id}.png')
     qr.save(qr_path)
 
     return jsonify({"mensaje": "Familia registrada exitosamente"}), 201
@@ -264,6 +304,7 @@ def crear_familia():
 
 
 @app.route("/sumar_puntos", methods=["POST"])
+@requiere_rol('admin', 'supervisor')
 def sumar_puntos():
     data = request.get_json()
     familia_id = data.get("familia_id")
@@ -317,6 +358,7 @@ def restar_puntos():
     return jsonify({"mensaje": "Puntos restados correctamente", "puntos_actuales": familia.puntos})
 
 @app.route("/historial/<int:familia_id>")
+@acceso_familia_o_staff
 def historial(familia_id):
     movimientos = MovimientoPuntos.query.filter_by(familia_id=familia_id).order_by(MovimientoPuntos.fecha.desc()).all()
     datos = [
@@ -327,6 +369,7 @@ def historial(familia_id):
 
 
 @app.route('/familias/<int:familia_id>/puntos', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def agregar_puntos(familia_id):
     data = request.get_json()
 
@@ -347,6 +390,7 @@ def agregar_puntos(familia_id):
         return jsonify({'error': 'El valor de "puntos" debe ser un número entero'}), 400
     
 @app.route('/familias/<int:familia_id>/canjear', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def canjear_puntos(familia_id):
     data = request.get_json()
 
@@ -377,6 +421,7 @@ from datetime import datetime
 import pytz
 
 @app.route('/transaccion', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def registrar_transaccion():
     data = request.get_json()
     familia_id = data.get('familia_id')
@@ -457,6 +502,7 @@ def registrar_transaccion():
 
     
 @app.route('/familia/<int:familia_id>/historial', methods=['GET'])
+@acceso_familia_o_staff
 def historial_transacciones(familia_id):
     familia = Familia.query.get(familia_id)
     if not familia:
@@ -477,6 +523,7 @@ def historial_transacciones(familia_id):
     return jsonify({'historial': resultado})
 
 @app.route("/familias", methods=["GET"])
+@login_requerido_admin
 def obtener_familias():
     familias = Familia.query.all()
     resultado = []
@@ -485,14 +532,14 @@ def obtener_familias():
             "id": familia.id,
             "nombre": familia.nombre,
             "correo": familia.correo,
-            "puntos": familia.puntos,
-            "password": familia.password  
+            "puntos": familia.puntos
         })
     return jsonify(resultado)
 
 from flask import render_template
 
 @app.route('/familia/<int:familia_id>/ver')
+@acceso_familia_o_staff
 def ver_familia(familia_id):
     familia = Familia.query.get(familia_id)
     if not familia:
@@ -535,6 +582,7 @@ def ver_familia(familia_id):
 
 
 @app.route('/familia/<int:familia_id>/transaccion', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def registrar_transaccion_web(familia_id):
     data = request.get_json()
     tipo = data.get("tipo")
@@ -590,6 +638,7 @@ def registrar_transaccion_web(familia_id):
 
 
 @app.route('/familia/<int:familia_id>/exportar')
+@acceso_familia_o_staff
 def exportar_transacciones(familia_id):
     familia = Familia.query.get(familia_id)
     if not familia:
@@ -631,6 +680,7 @@ def exportar_transacciones(familia_id):
     )
     
 @app.route('/crear_admin', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def crear_admin():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -726,6 +776,7 @@ def mostrar_lista_familias():
     return render_template("lista_familias.html", familias=familias)
 
 @app.route("/familia/<int:familia_id>/qr")
+@acceso_familia_o_staff
 def generar_qr_familia(familia_id):
     import qrcode
     import os
@@ -742,7 +793,7 @@ def generar_qr_familia(familia_id):
     qr = qrcode.make(qr_url)
 
     # Guardar el QR en static/qr/familia_<id>.png
-    qr_path = os.path.join(app.root_path, "static", "qr", f"familia_{familia.id}.png")
+    qr_path = os.path.join(carpeta_qr_familias(), f"familia_{familia.id}.png")
     if os.path.exists(qr_path):
         try:
             os.remove(qr_path)  # limpiar si ya existía un QR viejo
@@ -763,7 +814,8 @@ def login_familia():
         password = request.form["password"]
 
         familia = Familia.query.filter_by(correo=correo).first()
-        if familia and familia.password == password:  # ✅ ojo si luego encriptas
+        if familia and familia.password == password:
+            session.clear()
             session["familia_id"] = familia.id
             session["rol"] = "familia"
             session["nombre_usuario"] = familia.nombre
@@ -786,6 +838,7 @@ from flask_login import login_required, current_user
 from flask import render_template
 
 @app.route('/perfil_familia/<int:familia_id>')
+@login_requerido_familia
 def perfil_familia(familia_id):
     # Verifica que la familia logueada solo pueda ver su propio perfil
     if session["familia_id"] != familia_id:
@@ -812,6 +865,7 @@ def perfil_familia(familia_id):
 
 
 @app.route('/familia/<int:familia_id>/generar_qr', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def generar_o_regenerar_qr(familia_id):
     import os, qrcode
     from flask import flash, redirect, url_for
@@ -824,7 +878,7 @@ def generar_o_regenerar_qr(familia_id):
     db.session.commit()
 
     # 📦 Carpeta donde guardas el PNG del QR mostrado en familia.html
-    qr_folder = os.path.join(app.root_path, 'static', 'qr')
+    qr_folder = carpeta_qr_familias()
     os.makedirs(qr_folder, exist_ok=True)
 
     # 🔗 Mantenemos tu ruta original, solo agregamos ?version_qr=N
@@ -841,6 +895,7 @@ def generar_o_regenerar_qr(familia_id):
 
 
 @app.route('/escanear_qr/<int:familia_id>', methods=['GET'])
+@requiere_rol('admin', 'supervisor')
 def escanear_qr_suma(familia_id):
     familia = Familia.query.get(familia_id)
     if not familia:
@@ -947,6 +1002,7 @@ from datetime import datetime
 import pytz
 
 @app.route('/escanear_qr_evento/<int:evento_id>/<int:familia_id>')
+@requiere_rol('admin', 'supervisor')
 def escanear_qr_familia_en_evento(evento_id, familia_id):
     evento = EventoQR.query.get(evento_id)
     if not evento:
@@ -1063,13 +1119,14 @@ def escanear_familia_staff(familia_id):
 
 
 @app.route('/familia/<int:familia_id>/generar_qr_staff', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def generar_qr_staff(familia_id):
     familia = Familia.query.get(familia_id)
     if not familia:
         return "Familia no encontrada", 404
 
     # Crear carpeta si no existe
-    qr_folder = os.path.join('app', 'static', 'qr')
+    qr_folder = carpeta_qr_familias()
     os.makedirs(qr_folder, exist_ok=True)
 
     # Crear ruta de archivo
@@ -1084,6 +1141,7 @@ def generar_qr_staff(familia_id):
     return redirect(url_for('ver_familia', familia_id=familia.id))
 
 @app.route('/admin/escanear_evento', methods=['GET'])
+@requiere_rol('admin', 'supervisor')
 def escanear_evento_staff():
     if 'admin' not in session:
         return redirect(url_for('login'))
@@ -1131,6 +1189,7 @@ def escanear_evento_staff():
 
 
 @app.route('/api/escanear_qr_evento', methods=['POST'])
+@requiere_rol('admin', 'supervisor')
 def api_escanear_qr_evento():
     if 'admin_id' not in session:
         return jsonify({'error': 'No autorizado'}), 401
@@ -1191,12 +1250,14 @@ def api_escanear_qr_evento():
 
 
 @app.route("/admin/escaneo_evento/<int:evento_id>")
+@requiere_rol('admin', 'supervisor')
 def vista_escaneo_evento(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
     return render_template('escaneo_evento.html', evento=evento)
 
 
 @app.route('/admin/registrar_asistencia_evento', methods=["POST"])
+@requiere_rol('admin', 'supervisor')
 def registrar_asistencia_evento():
     from urllib.parse import urlparse, parse_qs
     import re
@@ -1352,15 +1413,6 @@ def crear_qr_evento():
 from functools import wraps
 from flask import session, redirect, url_for, flash
 
-def login_requerido_familia(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get("familia_id"):
-            flash("Debes iniciar sesión como familia para acceder.", "error")
-            return redirect(url_for("login_familia"))
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route('/escanear_evento/<int:evento_id>')
 @login_requerido_familia
 def escanear_evento_con_ubicacion(evento_id):
@@ -1378,6 +1430,7 @@ from flask import request, jsonify, url_for
 # … tus imports y decoradores …
 
 @app.route('/validar_ubicacion_evento', methods=['POST'])
+@login_requerido_familia
 def validar_ubicacion_evento():
     data       = request.get_json()
     lat        = data.get("lat")
@@ -1484,6 +1537,7 @@ def validar_ubicacion_evento():
 
 
 @app.route("/asistencia_exitosa/<int:evento_id>")
+@login_requerido_familia
 def asistencia_exitosa(evento_id):
     ya_asistio = request.args.get("ya_asistio", default="0") == "1"
     evento = EventoQR.query.get_or_404(evento_id)
@@ -1493,6 +1547,7 @@ def asistencia_exitosa(evento_id):
 
 
 @app.route('/ubicacion_invalida/<int:evento_id>')
+@login_requerido_familia
 def ubicacion_invalida(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
     return render_template('ubicacion_invalida.html', evento=evento)
@@ -1538,6 +1593,7 @@ def eliminar_evento(evento_id):
 from flask import send_from_directory
 
 @app.route('/descargar_qr_evento/<filename>')
+@login_requerido_admin
 def descargar_qr_evento(filename):
     carpeta_qr = os.path.join(app.root_path, 'static', 'qr_eventos')
     
@@ -1548,8 +1604,9 @@ def descargar_qr_evento(filename):
     return send_from_directory(carpeta_qr, filename, as_attachment=True)
 
 @app.route('/descargar_qr/<int:familia_id>')
+@acceso_familia_o_staff
 def descargar_qr(familia_id):
-    ruta = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia_id}.png')
+    ruta = os.path.join(carpeta_qr_familias(), f'familia_{familia_id}.png')
     return send_file(ruta, as_attachment=True)
 
 #@app.route('/escanear_evento/<int:evento_id>')
@@ -1561,6 +1618,7 @@ def descargar_qr(familia_id):
 #    return render_template("escanear_evento.html", evento=evento)
 
 @app.route('/familia/escanear_evento')
+@login_requerido_familia
 def escanear_evento_desde_familia():
     if 'familia_id' not in session:
         return redirect(url_for('login_familia'))
@@ -1583,6 +1641,7 @@ from app.models import Familia
 from app import db
 
 @app.route('/familia/<int:familia_id>/editar', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def editar_familia(familia_id):
     familia = Familia.query.get_or_404(familia_id)
     if request.method == 'POST':
@@ -1611,6 +1670,7 @@ def editar_familia(familia_id):
 
 
 @app.route('/admin/crear_lugar', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def crear_lugar():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1630,6 +1690,7 @@ def crear_lugar():
 
 # Eliminar lugar
 @app.route('/admin/eliminar_lugar/<int:id>', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_lugar(id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1642,6 +1703,7 @@ def eliminar_lugar(id):
 
 # Editar lugar
 @app.route('/admin/editar_lugar/<int:id>', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def editar_lugar(id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1659,6 +1721,7 @@ def editar_lugar(id):
     return render_template('editar_lugar.html', lugar=lugar)
 
 @app.route('/admin/eliminar_eventos', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_eventos():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1763,6 +1826,7 @@ def editar_evento(evento_id):
 
 
 @app.route('/admin/editar_beneficio/<int:beneficio_id>', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def editar_beneficio(beneficio_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1823,6 +1887,7 @@ from io import BytesIO, TextIOWrapper
 
 # Vista para mostrar historial de escaneos de un evento
 @app.route('/admin/evento/<int:evento_id>/historial')
+@login_requerido_admin
 def historial_escaneos_evento(evento_id):
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -1833,6 +1898,7 @@ def historial_escaneos_evento(evento_id):
     return render_template('historial_escaneos_evento.html', evento=evento, registros=registros)
 
 @app.route('/admin/evento/<int:evento_id>/exportar')
+@login_requerido_admin
 def exportar_historial_escaneos_evento(evento_id):
     evento = EventoQR.query.get_or_404(evento_id)
     registros = EventoQRRegistro.query.filter_by(evento_id=evento_id).order_by(EventoQRRegistro.fecha.desc()).all()
@@ -1877,6 +1943,7 @@ import qrcode
 import os
 
 @app.route('/familia/<int:familia_id>/descargar_pdf_qr')
+@acceso_familia_o_staff
 def descargar_pdf_qr_familia(familia_id):
     familia = Familia.query.get_or_404(familia_id)
 
@@ -1925,6 +1992,7 @@ from app.models import EventoQR  # Asegúrate de importar tu modelo
 from flask import abort
 
 @app.route('/evento/<int:evento_id>/descargar_pdf_qr')
+@login_requerido_admin
 def descargar_pdf_qr_evento(evento_id):
     evento = EventoQR.query.get(evento_id)
     if not evento:
@@ -1966,6 +2034,7 @@ from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=3)
 
 @app.route('/puntos-masivos', methods=['GET', 'POST'])
+@requiere_rol('admin')
 def puntos_masivos():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -2051,6 +2120,7 @@ from app.models import Familia, Transaccion, MovimientoPuntos  # ajusta nombres
 
 # Borrar una sola familia
 @app.route('/familia/<int:familia_id>/eliminar', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_familia(familia_id):
     familia = Familia.query.get_or_404(familia_id)
     nombre_familia = familia.nombre  
@@ -2072,6 +2142,7 @@ def eliminar_familia(familia_id):
 
 # Borrado masivo
 @app.route('/familias/eliminar_masivo', methods=['POST'])
+@requiere_rol('admin')
 def eliminar_familias_masivo():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -2100,6 +2171,7 @@ def eliminar_familias_masivo():
 
 # Listar en la nueva plantilla
 @app.route('/admin/familias/eliminar')
+@requiere_rol('admin')
 def lista_familias_eliminar():
     if 'admin_id' not in session:
         return redirect(url_for('login'))
@@ -2324,7 +2396,7 @@ def enviar_correo_movimiento(destinatario, nombre_familia, puntos, tipo, motivo)
 
 
 @app.route("/admin/editar_contrasena/<int:admin_id>", methods=["GET", "POST"])
-@login_requerido_admin
+@requiere_rol('admin')
 def editar_contrasena_admin(admin_id):
     admin = Admin.query.get_or_404(admin_id)
 
@@ -2426,7 +2498,7 @@ from reportlab.pdfgen import canvas
 @login_requerido_admin
 def descargar_qr_admin(familia_id):
     familia = Familia.query.get_or_404(familia_id)
-    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia.id}.png')
+    qr_path = os.path.join(carpeta_qr_familias(), f'familia_{familia.id}.png')
 
     if not os.path.exists(qr_path):
         flash("El QR no existe", "error")
@@ -2451,7 +2523,7 @@ from textwrap import wrap
 def descargar_qr_pdf(familia_id):
     familia = Familia.query.get_or_404(familia_id)
     
-    qr_path = os.path.join(app.root_path, 'static', 'qr', f'familia_{familia.id}.png')
+    qr_path = os.path.join(carpeta_qr_familias(), f'familia_{familia.id}.png')
     if not os.path.exists(qr_path):
         flash("El QR no existe", "error")
         return redirect(url_for('familia', familia_id=familia.id))
@@ -2498,9 +2570,7 @@ def _ext(filename: str) -> str:
     return filename[idx:].lower() if idx != -1 else ''
 
 def _qr_folder():
-    folder = os.path.join(app.root_path, 'static', 'qr')
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return carpeta_qr_familias()
 
 def _make_family_qr(familia):
     """Genera QR con versionado como en tu flujo actual."""
@@ -2526,9 +2596,7 @@ def _ext(filename: str) -> str:
     return filename[idx:].lower() if idx != -1 else ''
 
 def _qr_folder():
-    folder = os.path.join(app.root_path, 'static', 'qr')
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return carpeta_qr_familias()
 
 def _make_family_qr(familia):
     """Genera QR con versionado corto para familia"""
@@ -2691,9 +2759,7 @@ import qrcode, os, gc
 from qrcode.constants import ERROR_CORRECT_L
 
 def _qr_folder():
-    folder = os.path.join(app.root_path, 'static', 'qr')
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return carpeta_qr_familias()
 
 def _make_family_qr_optimized(familia):
     # QR corto: ruta relativa + versionado
@@ -2783,6 +2849,7 @@ def distancia_metros(lat1, lon1, lat2, lon2):
     return R * c
 
 @app.route('/validar_qr_evento', methods=["POST"])
+@login_requerido_familia
 def validar_qr_evento():
     data       = request.get_json()
     evento_id  = data.get("evento_id")
@@ -2919,5 +2986,3 @@ def validar_qr_evento():
     return jsonify({
         "redirect": url_for("asistencia_exitosa", evento_id=evento.id)
     })
-
-

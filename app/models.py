@@ -25,7 +25,6 @@ class Familia(db.Model, UserMixin):
         # ⚡ Diferencia familias de admins
         return f"familia-{self.id}"
 
-
 class MovimientoPuntos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     familia_id = db.Column(db.Integer, db.ForeignKey('familia.id'), nullable=False)
